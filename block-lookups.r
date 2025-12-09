@@ -128,7 +128,6 @@ for (file in block_cosub_files) {
   dbWriteTable(congref, table_name, data_clean, overwrite = TRUE)
 }
 
-
 block_cosub_tables <- dbListTables(congref)[grepl("block_cosub_", dbListTables(congref))]
 
 # Build the UNION ALL query dynamically

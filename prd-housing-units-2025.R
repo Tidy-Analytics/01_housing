@@ -20,7 +20,7 @@ drv <- duckdb('./data/housing.duckdb')
 conh <- dbConnect(drv)
 dbListTables(conh)
 
-dbGetQuery(conh, "SELECT * FROM hu_tract LIMIT 5")
+dbGetQuery(conh, "SELECT * FROM hu_cousub LIMIT 5")
 
 
 ### THIS SUPPLIES THE BLOCK TO COUNTY SUBDIVISION, BLOCK TO PLACE, AND BLOCK TO URBAN AREA LOOKUPS
@@ -679,6 +679,9 @@ dbWriteTable(conh, "metadata", metadata, overwrite = TRUE)
 dbDisconnect(conh)
 
 ####################################################################################################################
+
+
+dbGetQuery(conh, "select * from metadata")
 
 
 ### VISUALIZE ##########################################################################
