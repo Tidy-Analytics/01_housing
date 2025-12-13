@@ -12,7 +12,7 @@ load_dotenv()
 
 ### DUCKDB CONNECTION
 
-conh = duckdb.connect('./data/housing.duckdb')
+conh = duckdb.connect('./data/plhousing.duckdb')
 print(conh.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall())
 
 # Test query
@@ -160,8 +160,8 @@ def state_HU_data(state_code, state_name):
     ])
 
     # Merge data from all three years
-    HU_merged = HU_20.join(HU_24, on="block_geoid", how="full")
-    HU_merged = HU_merged.join(HU_25, on="block_geoid", how="full")
+    HU_merged = HU_20.join(HU_24, on="block_geoid", how="full", coalesce=True)
+    HU_merged = HU_merged.join(HU_25, on="block_geoid", how="full", coalesce=True)
     
     # Block aggregation - required because of block-part records
     HU_block = HU_merged.with_columns(
@@ -295,14 +295,14 @@ def state_HU_data(state_code, state_name):
 
     ## COUSUB ########################################################################
 
-    HU_cousub = HU_block.group_by("cousub").agg([
-        pl.col("HU_20").sum(),
-        pl.col("gq_20").sum(),
-        pl.col("HU_24").sum(),
-        pl.col("gq_24").sum(),
-        pl.col("HU_25").sum(),
-        pl.col("gq_25").sum(),
-        pl.count().alias("block_recs")
+    HU_cousub = HU_block.group_by(["co_fips", "cousub"]).agg([
+      pl.col("HU_20").sum(),
+      pl.col("gq_20").sum(),
+      pl.col("HU_24").sum(),
+      pl.col("gq_24").sum(),
+      pl.col("HU_25").sum(),
+      pl.col("gq_25").sum(),
+      pl.count().alias("block_recs")
     ])
 
     # Add state information to county subdivision
@@ -466,26 +466,42 @@ combined_ua_data.write_parquet("combined_ua_data.parquet")
 
 # Save data to DuckDB with new naming convention
 conh.execute("DROP TABLE IF EXISTS hu_block")
+conh.register("combined_block_data", combined_block_data)
 conh.execute("CREATE TABLE hu_block AS SELECT * FROM combined_block_data")
-
 conh.execute("DROP TABLE IF EXISTS hu_block_group")
+conh.register("combined_block_group_data", combined_block_group_data)
 conh.execute("CREATE TABLE hu_block_group AS SELECT * FROM combined_block_group_data")
+conh.unregister("combined_block_group_data")
 
 conh.execute("DROP TABLE IF EXISTS hu_tract")
+conh.register("combined_tract_data", combined_tract_data)
 conh.execute("CREATE TABLE hu_tract AS SELECT * FROM combined_tract_data")
+conh.unregister("combined_tract_data")
 
 conh.execute("DROP TABLE IF EXISTS hu_county")
+conh.register("combined_county_data", combined_county_data)
 conh.execute("CREATE TABLE hu_county AS SELECT * FROM combined_county_data")
+conh.unregister("combined_county_data")
 
 conh.execute("DROP TABLE IF EXISTS hu_zcta")
+conh.register("combined_zcta_data", combined_zcta_data)
 conh.execute("CREATE TABLE hu_zcta AS SELECT * FROM combined_zcta_data")
+conh.unregister("combined_zcta_data")
 
 conh.execute("DROP TABLE IF EXISTS hu_cousub")
+conh.register("combined_cousub_data", combined_cousub_data)
 conh.execute("CREATE TABLE hu_cousub AS SELECT * FROM combined_cousub_data")
+conh.unregister("combined_cousub_data")
 
 conh.execute("DROP TABLE IF EXISTS hu_place")
+conh.register("combined_place_data", combined_place_data)
 conh.execute("CREATE TABLE hu_place AS SELECT * FROM combined_place_data")
+conh.unregister("combined_place_data")
 
+conh.execute("DROP TABLE IF EXISTS hu_ua")
+conh.register("combined_ua_data", combined_ua_data)
+conh.execute("CREATE TABLE hu_ua AS SELECT * FROM combined_ua_data")
+conh.unregister("combined_ua_data")
 conh.execute("DROP TABLE IF EXISTS hu_ua")
 conh.execute("CREATE TABLE hu_ua AS SELECT * FROM combined_ua_data")
 
@@ -524,10 +540,14 @@ hu_us = calculate_hu_indices(hu_us)
 
 # Write hu_state and hu_us to duckdb
 conh.execute("DROP TABLE IF EXISTS hu_state")
+conh.register("hu_state", hu_state)
 conh.execute("CREATE TABLE hu_state AS SELECT * FROM hu_state")
+conh.unregister("hu_state")
 
 conh.execute("DROP TABLE IF EXISTS hu_us")
+conh.register("hu_us", hu_us)
 conh.execute("CREATE TABLE hu_us AS SELECT * FROM hu_us")
+conh.unregister("hu_us")
 
 hu_us.write_parquet("hu_us.parquet")
 hu_state.write_parquet("hu_state.parquet")
@@ -584,7 +604,9 @@ metadata = pl.from_pandas(
 
 # Save metadata table back to DuckDB
 conh.execute("DROP TABLE IF EXISTS metadata")
+conh.register("metadata", metadata)
 conh.execute("CREATE TABLE metadata AS SELECT * FROM metadata")
+conh.unregister("metadata")
 
 # Close the database connection
 conh.close()

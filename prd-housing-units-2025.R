@@ -20,7 +20,7 @@ drv <- duckdb('./data/housing.duckdb')
 conh <- dbConnect(drv)
 dbListTables(conh)
 
-dbGetQuery(conh, "SELECT * FROM hu_cousub LIMIT 5")
+dbGetQuery(conh, "SELECT * FROM hu_cousub where co_fips = '27053' LIMIT 20")
 
 
 ### THIS SUPPLIES THE BLOCK TO COUNTY SUBDIVISION, BLOCK TO PLACE, AND BLOCK TO URBAN AREA LOOKUPS
@@ -310,21 +310,25 @@ state_HU_data <- function(state_code, state_name) {
 
   ## COUSUB ########################################################################
 
-
+  ## FIX KEY CONSTRUCTION ERROR 12/8/25:
+  ## SHOULD BE CO_FIPS + COUSUB NOT COUSUB + STATE FIPS
+  ## UNIQUE KEY IS 10 CHARACTERS
+  
   HU_cousub  <- HU_block[
     ,
     c(
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_recs = .N)
     ),
-    by = .(cousub),
+    by = .(co_fips, cousub),
     .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25", "gq_25")
   ]
 
-    # Add state information to county subdivision
-  HU_cousub[, state_code := state_code]
-
-
+  # wrong key; added co_fips to aggregation
+  # Add state information to county subdivision
+  #HU_cousub[, state_code := state_code]
+  
+  
   ## PLACE ########################################################################
 
   HU_place  <- HU_block[
@@ -368,7 +372,7 @@ state_HU_data <- function(state_code, state_name) {
   )
 }
 
-# List of states and their codes
+List of states and their codes
 states <- list(
   "01" = "Alabama", "02" = "Alaska", "04" = "Arizona", "05" = "Arkansas",
   "06" = "California", "08" = "Colorado", "09" = "Connecticut",
@@ -417,20 +421,22 @@ for (state_code in names(states)) {
   ua_data[[state_name]] <- state_results$ua
 }
 
-# Function to calculate ratios and CAGR for housing unit data
+# Optimize calculate_hu_indices to do all calculations in one pass
 calculate_hu_indices <- function(dt) {
-  # 20 TO 24
-  dt[, hg_20_24 := HU_24 - HU_20]
-  dt[, hgi_20_24 := HU_24 / HU_20]
-  dt[, cagr_20_24 := ((hgi_20_24)^(1 / 4.33)) - 1]
-  # 24 To 25, 1 YEAR; SIMPLIFIED AGR FORMULA
-  dt[, hg_24_25 := HU_25 - HU_24]
-  dt[, hgi_25 := HU_25 / HU_24]
-  dt[, agr_25 := hgi_25 - 1]
-  # TOTAL PERIOD , 4.5 YEARS APRIL 2020 TO NOV 2024
-  dt[, hg_20_25 := HU_25 - HU_20]
-  dt[, hgi_20_25 := HU_25 / HU_20]
-  dt[, cagr_20_25 := ((hgi_20_25)^(1 / 5.33)) - 1]
+  dt[, `:=`(
+    # 20 TO 24
+    hg_20_24 = HU_24 - HU_20,
+    hgi_20_24 = HU_24 / HU_20,
+    cagr_20_24 = ((HU_24 / HU_20)^(1 / 4.25)) - 1,
+    # 24 To 25
+    hg_24_25 = HU_25 - HU_24,
+    hgi_25 = HU_25 / HU_24,
+    agr_25 = (HU_25 / HU_24) - 1,
+    # TOTAL PERIOD
+    hg_20_25 = HU_25 - HU_20,
+    hgi_20_25 = HU_25 / HU_20,
+    cagr_20_25 = ((HU_25 / HU_20)^(1 / 5.25)) - 1
+  )]
   return(dt)
 }
 
@@ -462,53 +468,6 @@ combined_zcta_data <- combined_zcta_data_raw[
   by = zcta_20
 ]
 
-# # Aggregate COUSUB data by cousub (unique key)
-# combined_cousub_data <- combined_cousub_data_raw[
-#   !is.na(cousub),
-#   .(
-#     HU_20 = sum(HU_20, na.rm = TRUE),
-#     gq_20 = sum(gq_20, na.rm = TRUE),
-#     HU_24 = sum(HU_24, na.rm = TRUE),
-#     gq_24 = sum(gq_24, na.rm = TRUE),
-#     HU_25 = sum(HU_25, na.rm = TRUE),
-#     gq_25 = sum(gq_25, na.rm = TRUE),
-#     block_recs = sum(block_recs, na.rm = TRUE),
-#     n_states = length(unique(state_code))
-#   ),
-#   by = cousub
-# ]
-
-# # Aggregate PLACE data by place (unique key)
-# combined_place_data <- combined_place_data_raw[
-#   !is.na(place),
-#   .(
-#     HU_20 = sum(HU_20, na.rm = TRUE),
-#     gq_20 = sum(gq_20, na.rm = TRUE),
-#     HU_24 = sum(HU_24, na.rm = TRUE),
-#     gq_24 = sum(gq_24, na.rm = TRUE),
-#     HU_25 = sum(HU_25, na.rm = TRUE),
-#     gq_25 = sum(gq_25, na.rm = TRUE),
-#     block_recs = sum(block_recs, na.rm = TRUE),
-#     n_states = length(unique(state_code))
-#   ),
-#   by = place
-# ]
-
-# # Aggregate UA data by ua (unique key)
-# combined_ua_data <- combined_ua_data_raw[
-#   !is.na(ua),
-#   .(
-#     HU_20 = sum(HU_20, na.rm = TRUE),
-#     gq_20 = sum(gq_20, na.rm = TRUE),
-#     HU_24 = sum(HU_24, na.rm = TRUE),
-#     gq_24 = sum(gq_24, na.rm = TRUE),
-#     HU_25 = sum(HU_25, na.rm = TRUE),
-#     gq_25 = sum(gq_25, na.rm = TRUE),
-#     block_recs = sum(block_recs, na.rm = TRUE),
-#     n_states = length(unique(state_code))
-#   ),
-#   by = ua
-# ]
 
 # Apply ratio and CAGR calculations to combined datasets
 combined_block_group_data <- calculate_hu_indices(combined_block_group_data)
@@ -545,7 +504,7 @@ dbWriteTable(conh, "hu_place", combined_place_data, overwrite = TRUE)
 dbWriteTable(conh, "hu_ua", combined_ua_data, overwrite = TRUE)
 
 dbListTables(conh)
-dbDisconnect(conh)
+#dbDisconnect(conh)
 
 ####################### MAIN SECTION COMPLETE ##########################################################
 
@@ -636,29 +595,6 @@ dbListTables(conh)
 
 saveRDS(hu_cbsa, "./data/hu_cbsa.rds")
 
-## SCRATCH #######################################################
-
-dbGetQuery(conh, "SELECT * FROM hu_cbsa limit 10")
-
-dbGetQuery(conh, "SELECT * FROM hu_place where place = '38000' and state_code = '29' or place = '36000' and state_code = '20'limit 10")
-
-
-dbListTables(congeo)
-
-dbGetQuery(congeo, "pragma table_info(geo_place)")
-
-places <- dbGetQuery(congeo, "select GEOID, PLACEFP, NAMELSAD, STATEFP as state_code from geo_place WHERE LOWER(NAMELSAD) LIKE '%kansas%'")
-places_data <- dbGetQuery(conh, "SELECT * FROM hu_place")
-
-places <- merge(
-  places,
-  places_data,
-  by.x = c("PLACEFP", "state_code"),
-  by.y = c("place", "state_code")
-)
-
-### END SCRATCH #######################################################
-
 ## read the list of tables in DuckDB, generate a single metadata table for all tables, consisting of
 ## table name, column name, column type, and column description
 ## leave column description blank for now
@@ -670,162 +606,11 @@ metadata[, column_description := NA]
 # Save metadata table back to DuckDB
 dbWriteTable(conh, "metadata", metadata, overwrite = TRUE)
 
-#dbListTables(conh)
-#dbGetQuery(conh, "SELECT * FROM metadata")
-#dbGetQuery(conh, "PRAGMA table_info(hu_block_group)")
-#dbGetQuery(conh, "select * from hu_zcta limit 100")
+####################################################################################################################
+
+#dbGetQuery(conh, "select * from metadata")
 
 # Close the database connection
 dbDisconnect(conh)
 
-####################################################################################################################
 
-
-dbGetQuery(conh, "select * from metadata")
-
-
-### VISUALIZE ##########################################################################
-# Create the scatter plot
-
-plotdata <- combined_county_data[substring(co_fips, 1, 2) == "48", ]
-
-thegraph <- plot_ly(
-  plotdata,
-  x = ~cagr_24,
-  y = ~cagr_25,
-  marker = list(
-    color = 'darkred',
-    line = list(color = 'yellow', width = 1)
-  )
-) |>
-  add_markers(
-    size = ~HU_24,
-    sizes = c(15, max(plotdata$HU_24 / 1000)),
-    text = ~paste("County: ", county_name, "<br>HU 24: ", HU_24)
-  ) |>
-  layout(
-    plot_bgcolor = "black",
-    yaxis = list(
-      title = "CAGR in Housing Units, 2023-24", 
-      tickformat = ".2%",
-      gridcolor = 'rgba(211, 211, 211, 0.2)',
-      range = c(0, 0.05)
-    ),
-    xaxis = list(
-      title = "CAGR in Housing Units, 2020-23", 
-      tickformat = ".2%",
-      gridcolor = 'rgba(211, 211, 211, 0.2)',
-      range = c(0, 0.05)
-    )
-  )
-thegraph
-
-# convert 'states' to a data table with two columns
-# 'state_fips' and 'state_name'
-# and merge with 'combined_county_data' to get state names
-# and add to the plot
-# Create a data table with state FIPS codes and names
-
-states_dt <- data.table(
-  state_fips = names(states),
-  state_name = unlist(states)
-)
-
-combined_county_data[, state_fips := substring(co_fips, 1, 2)]
-
-# Merge with combined_county_data to get state names
-combined_county_data <- merge(
-  combined_county_data,
-  states_dt,
-  by.x = "state_fips",
-  by.y = "state_fips",
-  all.x = TRUE
-)
-
-# Calculate median CAGR by state for ordering
-state_medians <- combined_county_data[, .(median_cagr = median(cagr_hu, na.rm = TRUE)), by = state_name.x]
-state_medians <- setorder(state_medians, -median_cagr)  # Sort in descending order
-
-# Create factor with levels ordered by median CAGR
-combined_county_data$state_ordered <- factor(
-  combined_county_data$state_name.x, 
-  levels = state_medians$state_name.x
-)
-
-# Create the boxplot with ordered states
-boxplot <- plot_ly(
-  combined_county_data[cagr_hu <= 0.1],  # Filter out counties with cagr_25 > 0.1
-  y = ~state_ordered,  # Using the ordered factor
-  x = ~cagr_hu,  # CAGR now on x-axis
-  type = "box",
-  boxpoints = "all",
-  jitter = 0.5,
-  pointpos = 0,
-  marker = list(
-    size = 5,  # Increased marker size from 3 to 5
-    color = 'rgba(220, 20, 20, 0.05)',  # Reduced opacity from 0.05
-    line = list(color = 'darkred', width = 1.5)
-  ),
-  line = list(color = 'rgb(0, 120, 0)', width = 2),  # Darker box lines (dark green)
-  fillcolor = 'rgba(220, 20, 20, 0.05)'  # Slightly color the boxes
-) |>
-  layout(
-    plot_bgcolor = "darkgrey",  # Changed from black to dark grey
-    paper_bgcolor = "darkgrey",  # Also setting paper background to dark grey for consistency
-    xaxis = list(
-      title = "Counties: CAGR in Housing Units, 2020-24", 
-      tickformat = ".2%",
-      gridcolor = 'rgba(255, 255, 255, 0.3)'
-    ),
-    yaxis = list(
-      title = "",  # Suppressed y-axis title
-      gridcolor = 'rgba(255, 255, 255, 0.3)',
-      gridwidth = 1,
-      griddash = 'dot'
-    ),
-    boxmode = "group",
-    boxgap = 0.1,  # Control gap between boxes
-    font = list(color = "white", style = "bold")  # Making text white for better contrast on dark background
-  )
-boxplot
-
-# Create the scatter plot, BLOCK GROUP
-thegraph <- plot_ly(
-  combined_block_group_data[
-    substring(block_group, 1, 2) == "27"
-    & HU_20 >= 5 & cagr_24 > 0 & cagr_25 > 0,
-  ],
- x = ~cagr_24,
- y = ~cagr_25,
- marker = list(color = 'darkred')
- )
- |>
-  add_markers(
-    size = ~HU_24,
-    sizemode = "area",
-    sizes = c(10, 200),
-    text = ~paste(
-      "Block Group: ",
-      block_group,
-      "<br>HU 24: ",
-      HU_25
-    )
-  ) %>%
-  layout(plot_bgcolor = "darkgrey",
-  yaxis = list(title = "CAGR in Housing Units, 2023-24", tickformat = ".2%"),
-  xaxis = list(title = "CAGR in Housing Units, 2020-23", tickformat = ".2%")
-)
-
-# Display the plot
-thegraph
-
-blocks <- dbGetQuery(
-      conh,
-      sprintf(
-        "SELECT * FROM read_csv_auto(
-          './data/geo/09_Connecticut_AddressBlockCountList_122024.txt',
-          header=True,
-          normalize_names=True,
-          all_varchar=True);"
-      )
-    )
