@@ -39,9 +39,11 @@ thegraph <- plot_ly(
   )
 ) |>
   add_markers(
-    size = ~HU_24,
-    sizes = c(30, max(plotdata$HU_24 / 1000)),
-    text = ~paste("County: ", county_name, "<br>HU 24: ", HU_24)
+    size = ~HU_25,
+    sizes = c(30, max(plotdata$HU_25 / 1000)),
+    text = ~paste("County: ", county_name,
+    "<br>HU 24: ", HU_24,
+     "<br>HU 25: ", HU_25)
   ) |>
   layout(
     plot_bgcolor = "black",
@@ -112,7 +114,8 @@ hu_county$state_ordered <- factor(
 
 # Create the boxplot with ordered states
 boxplot <- plot_ly(
-  hu_county[cagr_20_25 <= 0.2],  # Filter out counties with cagr_25 > 0.2
+  hu_county,
+  #hu_county[cagr_20_25 <= 0.2],  # Filter out counties with cagr_25 > 0.2
   y = ~state_ordered,  # Using the ordered factor
   x = ~cagr_20_25,  # CAGR now on x-axis
   type = "box",
@@ -120,12 +123,12 @@ boxplot <- plot_ly(
   jitter = 0.5,
   pointpos = 0,
   marker = list(
-    size = 5,  # Increased marker size from 3 to 5
-    color = 'rgba(220, 20, 20, 0.85)',  # Reduced opacity from 0.05
-    line = list(color = '#BCA375', width = 1.5)
+    size = 3,  # Increased marker size from 3 to 5
+    color = "rgba(220, 20, 20, 0.15)",  # Reduced opacity for transparency
+    line = list(color = "#BCA375", width = .5, opacity = 0.1)  # Light tan outline with some transparency
   ),
-  line = list(color = 'rgb(0, 120, 0)', width = 2),  # Darker box lines (dark green)
-  fillcolor = 'rgba(220, 20, 20, 0.05)'  # Slightly color the boxes
+  line = list(color = "rgb(0, 120, 0)", width = 2),  # Darker box lines (dark green)
+  fillcolor = "rgba(220, 20, 20, 0.05)"  # Slightly color the boxes
 ) |>
   layout(
     plot_bgcolor = "#2b2b2b",  # Very dark charcoal grey
@@ -142,51 +145,12 @@ boxplot <- plot_ly(
       gridcolor = 'rgba(255, 255, 255, 0.3)',
       gridwidth = 1,
       griddash = 'dot',
-      tickfont = list(color = 'rgba(255, 255, 255, 0.7)')
+      tickfont = list(color = 'rgba(255, 255, 255, 0.7)', size = 8)
     ),
     boxmode = "group",
-    boxgap = 0.1,  # Control gap between boxes
+    #boxgap = 0.1,  # Control gap between boxes
     font = list(color = "rgba(255, 255, 255, 0.7)", style = "bold")  # Softer white for better contrast on dark background
   )
 boxplot
 
-# Create the scatter plot, BLOCK GROUP
-thegraph <- plot_ly(
-  combined_block_group_data[
-    substring(block_group, 1, 2) == "27"
-    & HU_20 >= 5 & cagr_24 > 0 & cagr_25 > 0,
-  ],
- x = ~cagr_24,
- y = ~cagr_25,
- marker = list(color = 'darkred')
- )
- |>
-  add_markers(
-    size = ~HU_24,
-    sizemode = "area",
-    sizes = c(10, 200),
-    text = ~paste(
-      "Block Group: ",
-      block_group,
-      "<br>HU 24: ",
-      HU_25
-    )
-  ) %>%
-  layout(plot_bgcolor = "darkgrey",
-  yaxis = list(title = "CAGR in Housing Units, 2023-24", tickformat = ".2%"),
-  xaxis = list(title = "CAGR in Housing Units, 2020-23", tickformat = ".2%")
-)
 
-# Display the plot
-thegraph
-
-blocks <- dbGetQuery(
-      conh,
-      sprintf(
-        "SELECT * FROM read_csv_auto(
-          './data/geo/09_Connecticut_AddressBlockCountList_122024.txt',
-          header=True,
-          normalize_names=True,
-          all_varchar=True);"
-      )
-    )
