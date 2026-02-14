@@ -1,5 +1,5 @@
-## ZCTA TO STATE; 
-## CORE ADAPTED FROM 'zcta-to-county.r'
+## ZCTA TO GEOGRAPHIC ROLLUPS
+## CORE ADAPTED FROM 'bg-housing-rollups.r'
 
 library(duckdb)
 library(data.table)
@@ -113,56 +113,142 @@ hu_zcta_state <- as.data.table(
   merge(hu_zcta_state, hu_state, by.x = "state_fips", by.y = "state_code", all.x = TRUE)
 )
 
-*** RELATIVE INDEX COMPUTATIONS  -- STATE LEVEL
+############### RELATIVE INDEX COMPUTATIONS  -- STATE LEVEL
 
-hu_zcta_state[, idx_20_24_st := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_zcta_state[, idx_20_25_st := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_zcta_state[, idx_25_st := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_zcta_state[, idx_state_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+
+# cagr_* indexes (compound annual growth rate)
+hu_zcta_state[, idx_state_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_zcta_state[, idx_state_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_zcta_state[, idx_state_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_zcta_state[, idx_state_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_zcta_state[, idx_state_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_zcta_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
 
 ## TRIM FILE
 
 hu_zcta_state <- hu_zcta_state[, .(
   zcta_20,
-  idx_20_24_st,
-  idx_20_25_st,
-  idx_25_st
+  state_fips,
+  idx_state_hgi_20_apr_24_jul,
+  idx_state_hgi_24_jul_25_jul,
+  idx_state_hgi_24_jul_25_nov,
+  idx_state_hgi_25_jul_25_nov,
+  idx_state_hgi_20_apr_25_jul,
+  idx_state_hgi_20_apr_25_nov,
+  idx_state_cagr_20_apr_24_jul,
+  idx_state_cagr_24_jul_25_nov,
+  idx_state_cagr_25_jul_25_nov,
+  idx_state_cagr_20_apr_25_jul,
+  idx_state_cagr_20_apr_25_nov,
+  idx_state_agr_24_jul_25_jul
 )]
 
 
-*** RELATIVE INDEX COMPUTATIONS  -- US LEVEL
+############### RELATIVE INDEX COMPUTATIONS  -- US LEVEL
 
 hu_zcta_us <- as.data.table(
   merge(hu_zcta, hu_us, by = NULL, all = TRUE)
 )
 
-hu_zcta_us[, idx_20_24_us := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_zcta_us[, idx_20_25_us := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_zcta_us[, idx_25_us := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_zcta_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
 
-# compute percentile column for each .x column in lines 119-121, 
-# where the highest percentiles are the highest values
-hu_zcta_us[, pctl_20_24_us := as.integer(
-  ceiling(frank(hgi_20_24.x, ties.method = "min", na.last = "keep") / .N * 100)
+# cagr_* indexes (compound annual growth rate)
+hu_zcta_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_zcta_us[, idx_us_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_zcta_us[, idx_us_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_zcta_us[, idx_us_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_zcta_us[, idx_us_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_zcta_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+
+
+### COMPUTE NATIONAL PERCENTILES FOR ZCTAs
+
+# Percentiles for hgi_* metrics
+hu_zcta_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
+  ceiling(frank(hgi_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
+  ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
+  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
+  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
+  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
+  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
-hu_zcta_us[, pctl_20_25_us := as.integer(
-  ceiling(frank(hgi_20_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for cagr_* metrics
+hu_zcta_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
+  ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
+hu_zcta_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
+  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
+  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
+  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_zcta_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
+  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
-hu_zcta_us[, pctl_25_us := as.integer(
-  ceiling(frank(agr_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for agr_* metrics
+hu_zcta_us[, pctl_us_agr_24_jul_25_jul := as.integer(
+  ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
 
 hu_zcta_us <- hu_zcta_us[, .(
   zcta_20,
-  idx_20_24_us,
-  idx_20_25_us,
-  idx_25_us,
-  pctl_20_24_us,
-  pctl_20_25_us,
-  pctl_25_us
+  idx_us_hgi_20_apr_24_jul,
+  idx_us_hgi_24_jul_25_jul,
+  idx_us_hgi_24_jul_25_nov,
+  idx_us_hgi_25_jul_25_nov,
+  idx_us_hgi_20_apr_25_jul,
+  idx_us_hgi_20_apr_25_nov,
+  idx_us_cagr_20_apr_24_jul,
+  idx_us_cagr_24_jul_25_nov,
+  idx_us_cagr_25_jul_25_nov,
+  idx_us_cagr_20_apr_25_jul,
+  idx_us_cagr_20_apr_25_nov,
+  idx_us_agr_24_jul_25_jul,
+  pctl_us_hgi_20_apr_24_jul,
+  pctl_us_hgi_24_jul_25_jul,
+  pctl_us_hgi_24_jul_25_nov,
+  pctl_us_hgi_25_jul_25_nov,
+  pctl_us_hgi_20_apr_25_jul,
+  pctl_us_hgi_20_apr_25_nov,
+  pctl_us_cagr_20_apr_24_jul,
+  pctl_us_cagr_24_jul_25_nov,
+  pctl_us_cagr_25_jul_25_nov,
+  pctl_us_cagr_20_apr_25_jul,
+  pctl_us_cagr_20_apr_25_nov,
+  pctl_us_agr_24_jul_25_jul
 )]
 
 ## MERGE STATE AND US ROLLUPS INTO hu_zcta
@@ -171,8 +257,24 @@ hu_zcta_indexes <- as.data.table(
   merge(hu_zcta_state, hu_zcta_us, by = "zcta_20", all.x = TRUE)
 )
 
-dbWriteTable(conh, "hu_zcta_indexes", hu_zcta_indexes, overwrite = TRUE)
+## CLEANUP FIX FOR DUCKDB BARFING DUE TO UTF ISSUES
+## HAT TIP TO https://github.com/duckdb/duckdb-r/issues/12#issuecomment-2419681433
+## FOR THESE STRINGI FUNCTIONS
+
+hu_zcta_indexes <- hu_zcta_indexes |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+
+dbWriteTable(conh, "hu_zcta_state", hu_zcta_state, overwrite = TRUE)
+dbWriteTable(conh, "hu_zcta_us", hu_zcta_us, overwrite = TRUE)
 
 
-trajectory_up <- hu_zcta_indexes[idx_20_24_us < 100 & idx_25_us > 100, ]
-trajectory_down <- hu_zcta_indexes[idx_20_24_us > 100 & idx_25_us < 100, ]
+#### ZCTA INDEXES COMPLETE ###############################
+
+
+# # use plotly to show a scatter plot of pctl_us_hgi_20_apr_24_jul vs pctl_us_hgi_25_jul_25_nov
+# plot_ly(
+#   hu_zcta_us,
+#   x = ~pctl_us_hgi_20_apr_24_jul,
+#   y = ~pctl_us_hgi_24_jul_25_nov,
+#   type = "scatter",
+#   mode = "markers"
+# )

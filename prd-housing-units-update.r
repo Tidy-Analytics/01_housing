@@ -47,15 +47,15 @@ for (i in seq_along(states_list$state_code)) {
   state_name <- states_list$state_name[i]
   url <- paste0(
     "https://www2.census.gov/geo/pvs/addcountlisting/2025/", 
-    state_code, "_", state_name, "_AddressBlockCountList_072025.txt"
+    state_code, "_", state_name, "_AddressBlockCountList_122025.txt"
   )
   
-  filename <- paste0(state_code, "_", state_name, "_AddressBlockCountList_072025.txt")
+  filename <- paste0(state_code, "_", state_name, "_AddressBlockCountList_122025.txt")
   filepath <- file.path("/home/joel/data/geo", filename)
   
   # Use wget to download the file
   system(paste("wget", "-O", shQuote(filepath), shQuote(url)))
 }
+s
 
-
-  ## example: https://www2.census.gov/geo/pvs/addcountlisting/2025/01_Alabama_AddressBlockCountList_072025.txt
+  ## example: https://www2.census.gov/geo/pvs/addcountlisting/2025/01_Alabama_AddressBlockCountList_122025.txt

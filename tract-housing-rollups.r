@@ -1,5 +1,5 @@
-## ZCTA TO STATE; 
-## CORE ADAPTED FROM 'zcta-to-county.r'
+## TRACT TO GEOGRAPHIC ROLLUPS
+## CORE ADAPTED FROM 'bg-housing-rollups.r'
 
 library(duckdb)
 library(data.table)
@@ -22,26 +22,38 @@ dotenv::load_dot_env()
 conh <- dbConnect(duckdb('./data/housing.duckdb'))
 dbListTables(conh)
 
-conmeta <- dbConnect(duckdb('./data/duckdb_metadata.duckdb'))
-dbListTables(conmeta)
-
 congref <- dbConnect(duckdb('./data/georeference.duckdb'))
 dbListTables(congref)
 
-metadata <- dbGetQuery(conmeta, "select * from column_metadata")
-tables <- dbGetQuery(conmeta, "select * from table_summary")
+metadata <- dbGetQuery(conh, "select * from metadata")
 
-# load tracts and cbsa reference
+
+reactable(metadata, filterable = TRUE, searchable = TRUE, pagination = TRUE, defaultPageSize = 20)
+
+# load tracts
+
+hu_tract <- dbGetQuery(conh, "select * from hu_tract")
+
+# match tracts to cbsa via county
+
+county_to_cbsa <- fread("./data/county-cbsa-lookup.csv", 
+                        colClasses = c("character", "character", "character"),
+                        col.names = c("county", "cbsa23", "cbsa_title"))
+
+## write to georeference duckdb
+
+dbWriteTable(congref, "county_to_cbsa", county_to_cbsa, overwrite = TRUE)
+
+## get comparison geographies for index computations
+## COUNTY, CBSA, STATE, US 
+
 hu_tract <- as.data.table(dbGetQuery(conh, "select * from hu_tract"))
-
-## get indexes for baseline geographies
-
 hu_county <- as.data.table(dbGetQuery(conh, "select * from hu_county"))
 hu_cbsa <- as.data.table(dbGetQuery(conh, "select * from hu_cbsa"))
 hu_state <- as.data.table(dbGetQuery(conh, "select * from hu_state"))
 hu_us <- as.data.table(dbGetQuery(conh, "select * from hu_us"))
 
-#################################### COUNTY LEVEL TRACT ROLLUP #############
+#################################### CBSA LEVEL TRACT ROLLUP #############
 
 county_to_cbsa <- as.data.table(dbGetQuery(congref, "select * from county_to_cbsa"))
 
@@ -56,12 +68,26 @@ hu_tract_cbsa <- as.data.table(
 
 ############### RELATIVE INDEX COMPUTATIONS  -- CBSA LEVEL
 
-hu_tract_cbsa[, idx_20_24_cbsa := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_tract_cbsa[, idx_20_25_cbsa := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_tract_cbsa[, idx_25_cbsa := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_tract_cbsa[, idx_cbsa_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_tract_cbsa[, idx_cbsa_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_tract_cbsa[, idx_cbsa_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_tract_cbsa[, idx_cbsa_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_tract_cbsa[, idx_cbsa_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_tract_cbsa[, idx_cbsa_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
 
-## NULL CBSA ARE CONNECTICUT BLOCK GROUPS; CBSA DEFINITIONS BASED ON NEW PLANNING REGION
-## COMPONENTS ARE NOT YET DEFINED; WE ARE USING NEW PLANNING REGION IDS IN OUR BLOCK GROUP
+# cagr_* indexes (compound annual growth rate)
+hu_tract_cbsa[, idx_cbsa_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_tract_cbsa[, idx_cbsa_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_tract_cbsa[, idx_cbsa_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_tract_cbsa[, idx_cbsa_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_tract_cbsa[, idx_cbsa_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_tract_cbsa[, idx_cbsa_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+
+## NULL CBSA ARE CONNECTICUT TRACTS; CBSA DEFINITIONS BASED ON NEW PLANNING REGION
+## COMPONENTS ARE NOT YET DEFINED; WE ARE USING NEW PLANNING REGION IDS IN OUR TRACT
 ## IDENTIFIERS; WE WILL NEED A PLANNING REGION TO CBSA CROSSWALK TO HANDLE THESE; THESE ROWS 
 ## WOULD REPLACE COUNTY-BASED DEFINITIONS
 
@@ -74,9 +100,18 @@ hu_tract_cbsa[is.na(cbsa23), cbsa23 := "CT000"]
 hu_tract_cbsa <- hu_tract_cbsa[, .(
   tract,
   cbsa23,
-  idx_20_24_cbsa,
-  idx_20_25_cbsa,
-  idx_25_cbsa
+  idx_cbsa_hgi_20_apr_24_jul,
+  idx_cbsa_hgi_24_jul_25_jul,
+  idx_cbsa_hgi_24_jul_25_nov,
+  idx_cbsa_hgi_25_jul_25_nov,
+  idx_cbsa_hgi_20_apr_25_jul,
+  idx_cbsa_hgi_20_apr_25_nov,
+  idx_cbsa_cagr_20_apr_24_jul,
+  idx_cbsa_cagr_24_jul_25_nov,
+  idx_cbsa_cagr_25_jul_25_nov,
+  idx_cbsa_cagr_20_apr_25_jul,
+  idx_cbsa_cagr_20_apr_25_nov,
+  idx_cbsa_agr_24_jul_25_jul
 )]
 
 #################################### COUNTY LEVEL TRACT ROLLUP #############
@@ -87,9 +122,23 @@ hu_tract_county <- as.data.table(
 
 ################# RELATIVE INDEX COMPUTATIONS  -- COUNTY LEVEL
 
-hu_tract_county[, idx_20_24_county := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_tract_county[, idx_20_25_county := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_tract_county[, idx_25_county := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_tract_county[, idx_county_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_tract_county[, idx_county_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_tract_county[, idx_county_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_tract_county[, idx_county_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_tract_county[, idx_county_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_tract_county[, idx_county_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+
+# cagr_* indexes (compound annual growth rate)
+hu_tract_county[, idx_county_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_tract_county[, idx_county_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_tract_county[, idx_county_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_tract_county[, idx_county_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_tract_county[, idx_county_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_tract_county[, idx_county_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
 
 hu_tract_county <- hu_tract_county[!is.na(tract), ]
 
@@ -98,9 +147,18 @@ hu_tract_county <- hu_tract_county[!is.na(tract), ]
 hu_tract_county <- hu_tract_county[, .(
   tract,
   county_fips,
-  idx_20_24_county,
-  idx_20_25_county,
-  idx_25_county
+  idx_county_hgi_20_apr_24_jul,
+  idx_county_hgi_24_jul_25_jul,
+  idx_county_hgi_24_jul_25_nov,
+  idx_county_hgi_25_jul_25_nov,
+  idx_county_hgi_20_apr_25_jul,
+  idx_county_hgi_20_apr_25_nov,
+  idx_county_cagr_20_apr_24_jul,
+  idx_county_cagr_24_jul_25_nov,
+  idx_county_cagr_25_jul_25_nov,
+  idx_county_cagr_20_apr_25_jul,
+  idx_county_cagr_20_apr_25_nov,
+  idx_county_agr_24_jul_25_jul
 )]
 
 ################################## STATE LEVEL TRACT ROLLUP #############
@@ -113,9 +171,23 @@ hu_tract_state <- as.data.table(
 
 ############### RELATIVE INDEX COMPUTATIONS  -- STATE LEVEL
 
-hu_tract_state[, idx_20_24_state := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_tract_state[, idx_20_25_state := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_tract_state[, idx_25_state := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_tract_state[, idx_state_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_tract_state[, idx_state_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_tract_state[, idx_state_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_tract_state[, idx_state_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_tract_state[, idx_state_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_tract_state[, idx_state_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+
+# cagr_* indexes (compound annual growth rate)
+hu_tract_state[, idx_state_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_tract_state[, idx_state_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_tract_state[, idx_state_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_tract_state[, idx_state_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_tract_state[, idx_state_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_tract_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
 
 hu_tract_state <- hu_tract_state[!is.na(tract), ]
 
@@ -124,9 +196,18 @@ hu_tract_state <- hu_tract_state[!is.na(tract), ]
 hu_tract_state <- hu_tract_state[, .(
   tract,
   state_fips,
-  idx_20_24_state,
-  idx_20_25_state,
-  idx_25_state
+  idx_state_hgi_20_apr_24_jul,
+  idx_state_hgi_24_jul_25_jul,
+  idx_state_hgi_24_jul_25_nov,
+  idx_state_hgi_25_jul_25_nov,
+  idx_state_hgi_20_apr_25_jul,
+  idx_state_hgi_20_apr_25_nov,
+  idx_state_cagr_20_apr_24_jul,
+  idx_state_cagr_24_jul_25_nov,
+  idx_state_cagr_25_jul_25_nov,
+  idx_state_cagr_20_apr_25_jul,
+  idx_state_cagr_20_apr_25_nov,
+  idx_state_agr_24_jul_25_jul
 )]
 
 ################################## US LEVEL TRACT ROLLUP #############
@@ -140,46 +221,121 @@ hu_tract_us <- as.data.table(
 
 ############# RELATIVE INDEX COMPUTATIONS  -- US LEVEL
 
-hu_tract_us[, idx_20_24_us := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_tract_us[, idx_20_25_us := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_tract_us[, idx_25_us := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_tract_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_tract_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_tract_us[, idx_us_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
+hu_tract_us[, idx_us_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
+hu_tract_us[, idx_us_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
+hu_tract_us[, idx_us_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+
+# cagr_* indexes (compound annual growth rate)
+hu_tract_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_tract_us[, idx_us_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
+hu_tract_us[, idx_us_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
+hu_tract_us[, idx_us_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
+hu_tract_us[, idx_us_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_tract_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
 
 
-### FINALLY : COMPUTE NATIONAL PERCENTILES FOR BLOCK GROUPS
+### COMPUTE NATIONAL PERCENTILES FOR TRACTS
 
-# compute percentile column for each .x column in lines 119-121, 
-# where the highest percentiles are the highest values
-hu_tract_us[, pctl_20_24_us := as.integer(
-  ceiling(frank(hgi_20_24.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for hgi_* metrics
+hu_tract_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
+  ceiling(frank(hgi_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
+  ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
+  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
+  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
+  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
+  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
-hu_tract_us[, pctl_20_25_us := as.integer(
-  ceiling(frank(hgi_20_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for cagr_* metrics
+hu_tract_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
+  ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
+  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
+  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
+  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+)]
+hu_tract_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
+  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
-hu_tract_us[, pctl_25_us := as.integer(
-  ceiling(frank(agr_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for agr_* metrics
+hu_tract_us[, pctl_us_agr_24_jul_25_jul := as.integer(
+  ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
 )]
 
 hu_tract_us <- hu_tract_us[, .(
   tract,
-  idx_20_24_us,
-  idx_20_25_us,
-  idx_25_us,
-  pctl_20_24_us,
-  pctl_20_25_us,
-  pctl_25_us
+  idx_us_hgi_20_apr_24_jul,
+  idx_us_hgi_24_jul_25_jul,
+  idx_us_hgi_24_jul_25_nov,
+  idx_us_hgi_25_jul_25_nov,
+  idx_us_hgi_20_apr_25_jul,
+  idx_us_hgi_20_apr_25_nov,
+  idx_us_cagr_20_apr_24_jul,
+  idx_us_cagr_24_jul_25_nov,
+  idx_us_cagr_25_jul_25_nov,
+  idx_us_cagr_20_apr_25_jul,
+  idx_us_cagr_20_apr_25_nov,
+  idx_us_agr_24_jul_25_jul,
+  pctl_us_hgi_20_apr_24_jul,
+  pctl_us_hgi_24_jul_25_jul,
+  pctl_us_hgi_24_jul_25_nov,
+  pctl_us_hgi_25_jul_25_nov,
+  pctl_us_hgi_20_apr_25_jul,
+  pctl_us_hgi_20_apr_25_nov,
+  pctl_us_cagr_20_apr_24_jul,
+  pctl_us_cagr_24_jul_25_nov,
+  pctl_us_cagr_25_jul_25_nov,
+  pctl_us_cagr_20_apr_25_jul,
+  pctl_us_cagr_20_apr_25_nov,
+  pctl_us_agr_24_jul_25_jul
 )]
 
 
 ### WRITE TO DUCKDB
 
-hu_tract_indexes <- Reduce(function(x, y) merge(x, y, by = "tract", all = TRUE), 
-                                 list(hu_tract_cbsa, hu_tract_county, hu_tract_state, hu_tract_us)
-)
+## CLEANUP FIX FOR DUCKDB BARFING DUE TO UTF ISSUES
+## HAT TIP TO https://github.com/duckdb/duckdb-r/issues/12#issuecomment-2419681433
+## FOR THESE STRINGI FUNCTIONS
 
-hu_tract_indexes <- hu_tract_indexes[!is.na(tract), ]
+hu_tract_state <- hu_tract_state |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+hu_tract_county <- hu_tract_county |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+hu_tract_cbsa <- hu_tract_cbsa |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+hu_tract_us <- hu_tract_us |> mutate(across(where(is.character), stringi::stri_enc_tonative))
 
-dbWriteTable(conh, "hu_tract_indexes", hu_tract_indexes, overwrite = TRUE)
+# us count is one more than the others
+# all NAs, remove
+hu_tract_us <- hu_tract_us[!is.na(tract), ]
+
+length(unique(hu_tract_county$tract))
+length(unique(hu_tract_cbsa$tract))
+length(unique(hu_tract_state$tract))
+length(unique(hu_tract_us$tract))
+
+dbWriteTable(conh, "hu_tract_county", hu_tract_county, overwrite = TRUE)
+dbWriteTable(conh, "hu_tract_cbsa", hu_tract_cbsa, overwrite = TRUE)
+dbWriteTable(conh, "hu_tract_state", hu_tract_state, overwrite = TRUE)
+dbWriteTable(conh, "hu_tract_us", hu_tract_us, overwrite = TRUE)
 
 #### TRACT INDEXES COMPLETE ###############################

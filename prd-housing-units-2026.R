@@ -20,29 +20,38 @@ drv <- duckdb('./data/housing.duckdb')
 conh <- dbConnect(drv)
 dbListTables(conh)
 
-dbGetQuery(conh, "SELECT * FROM hu_cousub where co_fips = '27053' LIMIT 20")
+metadata <-dbGetQuery(conh, "SELECT * FROM metadata;")
 
+reactable(metadata, filterable = TRUE, searchable = TRUE,
+          pagination = TRUE, highlight = TRUE, bordered = TRUE,
+          striped = TRUE, compact = TRUE)
+
+
+### COUNTY TO CBSA CROSSWALK ####################################################
+
+county_to_cbsa <- fread('./data/county-cbsa-lookup.csv', colClasses = "character")
+
+### END OF COUNTY TO CBSA CROSSWALK 
 
 ### THIS SUPPLIES THE BLOCK TO COUNTY SUBDIVISION, BLOCK TO PLACE, AND BLOCK TO URBAN AREA LOOKUPS
 
-congref <- dbConnect(duckdb::duckdb(),
-                    dbdir = "./data/georeference.duckdb",
-                    read_only = FALSE,
-                    extensions = c("spatial"))
+congref <- dbConnect(
+  duckdb::duckdb(),
+  dbdir = "./data/georeference.duckdb",
+  extensions = c("spatial"))
 
 congeo <- dbConnect(
   duckdb::duckdb(), 
   dbdir = "./data/spatial_storage.duckdb",
-  read_only = FALSE,
   extensions = c("spatial")
 )
 
+dbListTables(congref)
 dbListTables(congeo)
 
 place_look <- data.table(
   dbGetQuery(congref, "select geoid, place, placename, county from block_place;")
 )
-
 place_unique <- place_look[, .(place = unique(place)), by = placename]
 
 cousub_look <- data.table(
@@ -67,7 +76,8 @@ co_id <- data.table(dbGetQuery(
 
 county_ids <- co_id[, .(fipscode = max(county_geoid)), by = county_name]
 
-### LOAD BLOCK MAPPING DATA FOR CONNECTICUT FIPS '09'
+
+### LOAD BLOCK MAPPING DATA FOR CONNECTICUT FIPS '09' ###########################
 
 ct_remap_id <- data.table(dbGetQuery(
   congref, "SELECT block_fips_2020, block_fips_2022 FROM read_csv_auto(
@@ -76,7 +86,7 @@ ct_remap_id <- data.table(dbGetQuery(
 )
 )
 
-#### BLOCK TO ZCTA RELATIONSHIPS
+#### BLOCK TO ZCTA RELATIONSHIPS ##################################################
 
 block_to_zcta <- data.table(
    dbGetQuery(
@@ -184,8 +194,8 @@ state_HU_data <- function(state_code, state_name) {
   HU_25_nov <- setorder(HU_25_nov, -total_housing_units)
 
   # Rename columns
-  HU_20 <- setnames(HU_20, c("total_housing_units", "total_group_quarters"), c("HU_20", "gq_20"))
-  HU_24 <- setnames(HU_24, c("total_housing_units", "total_group_quarters"), c("HU_24", "gq_24"))
+  HU_20 <- setnames(HU_20, c("total_housing_units", "total_group_quarters"), c("HU_20_apr", "gq_20_apr"))
+  HU_24 <- setnames(HU_24, c("total_housing_units", "total_group_quarters"), c("HU_24_jul", "gq_24_jul"))
   HU_25_jul <- setnames(HU_25_jul, c("total_housing_units", "total_group_quarters"), c("HU_25_jul", "gq_25_jul"))
   HU_25_nov <- setnames(HU_25_nov, c("total_housing_units", "total_group_quarters"), c("HU_25_nov", "gq_25_nov"))
 
@@ -197,8 +207,8 @@ state_HU_data <- function(state_code, state_name) {
 
 
   # Convert housing units and group quarters to integer
-  HU_20[, c("HU_20", "gq_20") := lapply(.SD, as.integer), .SDcols = c("HU_20", "gq_20")]
-  HU_24[, c("HU_24", "gq_24") := lapply(.SD, as.integer), .SDcols = c("HU_24", "gq_24")]
+  HU_20[, c("HU_20_apr", "gq_20_apr") := lapply(.SD, as.integer), .SDcols = c("HU_20_apr", "gq_20_apr")]
+  HU_24[, c("HU_24_jul", "gq_24_jul") := lapply(.SD, as.integer), .SDcols = c("HU_24_jul", "gq_24_jul")]
   HU_25_jul[, c("HU_25_jul", "gq_25_jul") := lapply(.SD, as.integer), .SDcols = c("HU_25_jul", "gq_25_jul")]
   HU_25_nov[, c("HU_25_nov", "gq_25_nov") := lapply(.SD, as.integer), .SDcols = c("HU_25_nov", "gq_25_nov")]
 
@@ -213,12 +223,11 @@ state_HU_data <- function(state_code, state_name) {
     c(
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_part_recs = .N)
-    ), 
+    ),
     by = .(block_geoid = substring(block_geoid, 1, 15)),
     .SDcols = -"block_geoid"
   ]
 
-  # IF STATE IS CONNECTICUT THEN MAP OLD BLOCK ID TO NEW BLOCK ID BASED ON PLANNING REGION
 
   # Merge with block_to_zcta
   HU_block <- merge(
@@ -264,7 +273,8 @@ state_HU_data <- function(state_code, state_name) {
     all.x = TRUE
   )
 
-# CONNECTICUT ONLY
+# IF STATE IS CONNECTICUT THEN MAP OLD BLOCK ID TO NEW BLOCK ID BASED ON PLANNING REGION
+
 # remap block_geoid to block_fips_2022
 # this ID is based on new CT planning regions
 # this assures match to geo ID in boundary files, 
@@ -282,7 +292,7 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(block_group = substring(block_geoid, 1, 12)),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Add state information to block group
@@ -298,7 +308,7 @@ state_HU_data <- function(state_code, state_name) {
     )
     ,
     by = .(tract = substring(block_geoid, 1, 11)),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Add state information to tract
@@ -311,7 +321,7 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(co_fips = substring(block_geoid, 1, 5)),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Attach county names
@@ -330,7 +340,7 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(zcta_20),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Add state information to ZCTA
@@ -351,7 +361,7 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(co_fips, cousub),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # wrong key; added co_fips to aggregation
@@ -368,7 +378,7 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(place),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Add state information to place
@@ -383,11 +393,10 @@ state_HU_data <- function(state_code, state_name) {
       .(block_recs = .N)
     ),
     by = .(ua),
-    .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
+    .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
   # Add state information to urban area
   HU_ua[, state_code := state_code]
-
 
   # Return all data tables###################################################################
   list(
@@ -456,29 +465,29 @@ for (state_code in names(states)) {
 calculate_hu_indices <- function(dt) {
   dt[, `:=`(
     # 20 TO 24 (Apr 2020 - Jul 2024 = 4.25 years)
-    hg_20_24 = HU_24 - HU_20,
-    hgi_20_24 = ifelse(HU_20 > 0, HU_24 / HU_20, NA_real_),
-    cagr_20_24 = ifelse(HU_20 > 0, ((HU_24 / HU_20)^(1 / 4.25)) - 1, NA_real_),
+    hg_20_apr_24_jul = HU_24_jul - HU_20_apr,
+    hgi_20_apr_24_jul = ifelse(HU_20_apr > 0, HU_24_jul / HU_20_apr, NA_real_),
+    cagr_20_apr_24_jul = ifelse(HU_20_apr > 0, ((HU_24_jul / HU_20_apr)^(1 / 4.25)) - 1, NA_real_),
     # 24 To 25 JUL (Jul 2024 - Jul 2025 = 1.0 year)
-    hg_24_25_jul = HU_25_jul - HU_24,
-    hgi_25_jul = ifelse(HU_24 > 0, HU_25_jul / HU_24, NA_real_),
-    agr_25_jul = ifelse(HU_24 > 0, (HU_25_jul / HU_24) - 1, NA_real_),
+    hg_24_jul_25_jul = HU_25_jul - HU_24_jul,
+    hgi_24_jul_25_jul = ifelse(HU_24_jul > 0, HU_25_jul / HU_24_jul, NA_real_),
+    agr_24_jul_25_jul = ifelse(HU_24_jul > 0, (HU_25_jul / HU_24_jul) - 1, NA_real_),
     # 24 To 25 NOV (Jul 2024 - Nov 2025 = 1.33 years)
-    hg_24_25_nov = HU_25_nov - HU_24,
-    hgi_25_nov = ifelse(HU_24 > 0, HU_25_nov / HU_24, NA_real_),
-    cagr_24_25_nov = ifelse(HU_24 > 0, ((HU_25_nov / HU_24)^(1 / 1.33)) - 1, NA_real_),
+    hg_24_jul_25_nov = HU_25_nov - HU_24_jul,
+    hgi_24_jul_25_nov = ifelse(HU_24_jul > 0, HU_25_nov / HU_24_jul, NA_real_),
+    cagr_24_jul_25_nov = ifelse(HU_24_jul > 0, ((HU_25_nov / HU_24_jul)^(1 / 1.33)) - 1, NA_real_),
     # JUL TO NOV 2025 (Jul 2025 - Nov 2025 = 0.33 years, 4 months)
-    hg_jul_nov_25 = HU_25_nov - HU_25_jul,
-    hgi_jul_nov_25 = ifelse(HU_25_jul > 0, HU_25_nov / HU_25_jul, NA_real_),
-    cagr_jul_nov_25 = ifelse(HU_25_jul > 0, ((HU_25_nov / HU_25_jul)^(1 / 0.33)) - 1, NA_real_),
+    hg_25_jul_25_nov = HU_25_nov - HU_25_jul,
+    hgi_25_jul_25_nov = ifelse(HU_25_jul > 0, HU_25_nov / HU_25_jul, NA_real_),
+    cagr_25_jul_25_nov = ifelse(HU_25_jul > 0, ((HU_25_nov / HU_25_jul)^(1 / 0.33)) - 1, NA_real_),
     # TOTAL PERIOD TO JUL 2025 (Apr 2020 - Jul 2025 = 5.25 years)
-    hg_20_25_jul = HU_25_jul - HU_20,
-    hgi_20_25_jul = ifelse(HU_20 > 0, HU_25_jul / HU_20, NA_real_),
-    cagr_20_25_jul = ifelse(HU_20 > 0, ((HU_25_jul / HU_20)^(1 / 5.25)) - 1, NA_real_),
+    hg_20_apr_25_jul = HU_25_jul - HU_20_apr,
+    hgi_20_apr_25_jul = ifelse(HU_20_apr > 0, HU_25_jul / HU_20_apr, NA_real_),
+    cagr_20_apr_25_jul = ifelse(HU_20_apr > 0, ((HU_25_jul / HU_20_apr)^(1 / 5.25)) - 1, NA_real_),
     # TOTAL PERIOD TO NOV 2025 (Apr 2020 - Nov 2025 = 5.58 years)
-    hg_20_25_nov = HU_25_nov - HU_20,
-    hgi_20_25_nov = ifelse(HU_20 > 0, HU_25_nov / HU_20, NA_real_),
-    cagr_20_25_nov = ifelse(HU_20 > 0, ((HU_25_nov / HU_20)^(1 / 5.58)) - 1, NA_real_)
+    hg_20_apr_25_nov = HU_25_nov - HU_20_apr,
+    hgi_20_apr_25_nov = ifelse(HU_20_apr > 0, HU_25_nov / HU_20_apr, NA_real_),
+    cagr_20_apr_25_nov = ifelse(HU_20_apr > 0, ((HU_25_nov / HU_20_apr)^(1 / 5.58)) - 1, NA_real_)
   )]
   return(dt)
 }
@@ -499,10 +508,10 @@ combined_ua_data_raw <- rbindlist(ua_data)
 combined_zcta_data <- combined_zcta_data_raw[
   !is.na(zcta_20),
   .(
-    HU_20 = sum(HU_20, na.rm = TRUE),
-    gq_20 = sum(gq_20, na.rm = TRUE),
-    HU_24 = sum(HU_24, na.rm = TRUE),
-    gq_24 = sum(gq_24, na.rm = TRUE),
+    HU_20_apr = sum(HU_20_apr, na.rm = TRUE),
+    gq_20_apr = sum(gq_20_apr, na.rm = TRUE),
+    HU_24_jul = sum(HU_24_jul, na.rm = TRUE),
+    gq_24_jul = sum(gq_24_jul, na.rm = TRUE),
     HU_25_jul = sum(HU_25_jul, na.rm = TRUE),
     gq_25_jul = sum(gq_25_jul, na.rm = TRUE),
     HU_25_nov = sum(HU_25_nov, na.rm = TRUE),
@@ -548,7 +557,12 @@ dbWriteTable(conh, "hu_cousub", combined_cousub_data, overwrite = TRUE)
 dbWriteTable(conh, "hu_place", combined_place_data, overwrite = TRUE)
 dbWriteTable(conh, "hu_ua", combined_ua_data, overwrite = TRUE)
 
-dbListTables(conh)
+# dbListTables(conh)
+# dbGetQuery(
+#   conh, "SELECT tract, HU_20_apr, HU_24_jul, HU_25_jul, HU_25_nov 
+#   FROM hu_tract where substr(tract, 1, 5) = '27053' LIMIT 100;"
+#   )
+
 #dbDisconnect(conh)
 
 ####################### MAIN SECTION COMPLETE ##########################################################
@@ -562,10 +576,10 @@ dbListTables(conh)
 hu_county <- data.table(dbGetQuery(conh, "SELECT * FROM hu_county;"))
 
 hu_state <- hu_county[, .(
-  HU_20 = sum(HU_20, na.rm = TRUE),
-  gq_20 = sum(gq_20, na.rm = TRUE),
-  HU_24 = sum(HU_24, na.rm = TRUE),
-  gq_24 = sum(gq_24, na.rm = TRUE),
+  HU_20_apr = sum(HU_20_apr, na.rm = TRUE),
+  gq_20_apr = sum(gq_20_apr, na.rm = TRUE),
+  HU_24_jul = sum(HU_24_jul, na.rm = TRUE),
+  gq_24_jul = sum(gq_24_jul, na.rm = TRUE),
   HU_25_jul = sum(HU_25_jul, na.rm = TRUE),
   gq_25_jul = sum(gq_25_jul, na.rm = TRUE),
   HU_25_nov = sum(HU_25_nov, na.rm = TRUE),
@@ -576,10 +590,10 @@ hu_state <- hu_county[, .(
 # national total
 
 hu_us <- hu_county[, .(
-  HU_20 = sum(HU_20, na.rm = TRUE),
-  gq_20 = sum(gq_20, na.rm = TRUE),
-  HU_24 = sum(HU_24, na.rm = TRUE),
-  gq_24 = sum(gq_24, na.rm = TRUE),
+  HU_20_apr = sum(HU_20_apr, na.rm = TRUE),
+  gq_20_apr = sum(gq_20_apr, na.rm = TRUE),
+  HU_24_jul = sum(HU_24_jul, na.rm = TRUE),
+  gq_24_jul = sum(gq_24_jul, na.rm = TRUE),
   HU_25_jul = sum(HU_25_jul, na.rm = TRUE),
   gq_25_jul = sum(gq_25_jul, na.rm = TRUE),
   HU_25_nov = sum(HU_25_nov, na.rm = TRUE),
@@ -603,11 +617,12 @@ saveRDS(hu_state, "hu_state.rds")
 ############## ADDENDUM 2: CBSA ROLLUP TOTALS FOR DUCK DB; RETRIEVE lATER WITH INDEX CREATION
 
 hu_block_group <- as.data.table(
-  dbGetQuery(conh, "select * from hu_block_group")
+  dbGetQuery(conh, "select * from hu_block_group;")
 )
 hu_block_group[, county_fips := substr(block_group, 1, 5)]
 
-county_to_cbsa <- fread('./data/county-cbsa-lookup.csv', colClasses = "character")
+dbGetQuery(conh, "SELECT * FROM county_cbsa_lookup;")
+
 
 hu_block_group <- merge(
   hu_block_group,
@@ -618,10 +633,10 @@ hu_block_group <- merge(
 )
 
 hu_cbsa <- hu_block_group[, .(
-  HU_20 = sum(HU_20, na.rm = TRUE),
-  gq_20 = sum(gq_20, na.rm = TRUE),
-  HU_24 = sum(HU_24, na.rm = TRUE),
-  gq_24 = sum(gq_24, na.rm = TRUE),
+  HU_20_apr = sum(HU_20_apr, na.rm = TRUE),
+  gq_20_apr = sum(gq_20_apr, na.rm = TRUE),
+  HU_24_jul = sum(HU_24_jul, na.rm = TRUE),
+  gq_24_jul = sum(gq_24_jul, na.rm = TRUE),
   HU_25_jul = sum(HU_25_jul, na.rm = TRUE),
   gq_25_jul = sum(gq_25_jul, na.rm = TRUE),
   HU_25_nov = sum(HU_25_nov, na.rm = TRUE),
@@ -645,21 +660,6 @@ dbWriteTable(conh, "hu_cbsa", hu_cbsa, overwrite = TRUE)
 dbListTables(conh)
 
 saveRDS(hu_cbsa, "hu_cbsa.rds")
-
-## read the list of tables in DuckDB, generate a single metadata table for all tables, consisting of
-## table name, column name, column type, and column description
-## leave column description blank for now
-
-metadata <- data.table(dbGetQuery(conh, "SELECT table_name, column_name, data_type, column_default, is_nullable, ordinal_position as cid FROM information_schema.columns WHERE table_schema = 'main'"))
-metadata <- metadata[, .(table_name, column_name, data_type, column_default, is_nullable, cid)]
-metadata[, column_description := NA]
-
-# Save metadata table back to DuckDB
-dbWriteTable(conh, "metadata", metadata, overwrite = TRUE)
-
-####################################################################################################################
-
-#dbGetQuery(conh, "select * from metadata")
 
 # Close the database connection
 dbDisconnect(conh)
