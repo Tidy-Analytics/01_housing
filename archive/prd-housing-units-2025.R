@@ -20,7 +20,7 @@ drv <- duckdb('./data/housing.duckdb')
 conh <- dbConnect(drv)
 dbListTables(conh)
 
-dbGetQuery(conh, "SELECT * FROM hu_cousub where co_fips = '27053' LIMIT 20")
+dbGetQuery(conh, "SELECT * FROM hu_cousub where county_fips = '27053' LIMIT 20")
 
 
 ### THIS SUPPLIES THE BLOCK TO COUNTY SUBDIVISION, BLOCK TO PLACE, AND BLOCK TO URBAN AREA LOOKUPS
@@ -47,7 +47,7 @@ place_unique <- place_look[, .(place = unique(place)), by = placename]
 
 cousub_look <- data.table(
   dbGetQuery(congref, "select geoid,  cousub20 AS cousub, 
-    mcdname, county as co_fips from block_cosub;")
+    mcdname, county as county_fips from block_cosub;")
 )
 
 ua_look <- data.table(
@@ -280,12 +280,12 @@ state_HU_data <- function(state_code, state_name) {
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_recs = .N)
     ), 
-    by = .(co_fips = substring(block_geoid, 1, 5)),
+    by = .(county_fips = substring(block_geoid, 1, 5)),
     .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25", "gq_25")
   ]
 
   # Attach county names
-  HU_co <- merge(HU_co, county_ids, by.x = "co_fips", by.y = "fipscode", all.x = TRUE)
+  HU_co <- merge(HU_co, county_ids, by.x = "county_fips", by.y = "fipscode", all.x = TRUE)
 
   # Add state information
   HU_co[, state_code := state_code]
@@ -311,7 +311,7 @@ state_HU_data <- function(state_code, state_name) {
   ## COUSUB ########################################################################
 
   ## FIX KEY CONSTRUCTION ERROR 12/8/25:
-  ## SHOULD BE CO_FIPS + COUSUB NOT COUSUB + STATE FIPS
+  ## SHOULD BE county_fips + COUSUB NOT COUSUB + STATE FIPS
   ## UNIQUE KEY IS 10 CHARACTERS
   
   HU_cousub  <- HU_block[
@@ -320,11 +320,11 @@ state_HU_data <- function(state_code, state_name) {
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_recs = .N)
     ),
-    by = .(co_fips, cousub),
+    by = .(county_fips, cousub),
     .SDcols = c("HU_20", "gq_20", "HU_24", "gq_24", "HU_25", "gq_25")
   ]
 
-  # wrong key; added co_fips to aggregation
+  # wrong key; added county_fips to aggregation
   # Add state information to county subdivision
   #HU_cousub[, state_code := state_code]
   

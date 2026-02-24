@@ -124,7 +124,7 @@ hu_block_group_cbsa <- hu_block_group_cbsa[, .(
 #################################### COUNTY LEVEL BG ROLLUP #############
 
 hu_block_group_county <- as.data.table(
-  merge(hu_block_group, hu_county, by.x = "county_fips", by.y = "co_fips", all.x = TRUE)
+  merge(hu_block_group, hu_county, by.x = "county_fips", by.y = "county_fips", all.x = TRUE)
 )
 
 ################# RELATIVE INDEX COMPUTATIONS  -- COUNTY LEVEL
@@ -346,3 +346,4 @@ dbWriteTable(conh, "hu_block_group_state", hu_block_group_state, overwrite = TRU
 dbWriteTable(conh, "hu_block_group_us", hu_block_group_us, overwrite = TRUE)
 
 dbListTables(conh)
+

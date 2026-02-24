@@ -226,7 +226,6 @@ dbWriteTable(conh, "hu_place_us", hu_place_us, overwrite = TRUE)
 
 dbListTables(conh)
 
-
 #### PLACE INDEXES COMPLETE ###############################
 
 

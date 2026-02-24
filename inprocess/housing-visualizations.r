@@ -27,23 +27,23 @@ hu_county <- as.data.table(
   dbGetQuery(conh, "select * from hu_county")
 )
 
-plotdata <- hu_county[substring(co_fips, 1, 2) == "48", ]
+plotdata <- hu_county[substring(county_fips, 1, 2) == "48", ]
 
 thegraph <- plot_ly(
   plotdata,
-  x = ~cagr_20_24,
-  y = ~agr_25,
+  x = ~cagr_20_apr_24_jul,
+  y = ~agr_24_jul_25_jul,
   marker = list(
     color = 'darkred',
     line = list(color = 'yellow', width = 1)
   )
 ) |>
   add_markers(
-    size = ~HU_25,
-    sizes = c(30, max(plotdata$HU_25 / 1000)),
+    size = ~HU_25_jul,
+    sizes = c(30, max(plotdata$HU_25_jul / 1000)),
     text = ~paste("County: ", county_name,
-    "<br>HU 24: ", HU_24,
-     "<br>HU 25: ", HU_25)
+    "<br>HU 24: ", HU_24_jul,
+     "<br>HU 25: ", HU_25_jul)
   ) |>
   layout(
     plot_bgcolor = "black",
@@ -91,7 +91,7 @@ states_dt <- data.table(
   state_name = unlist(states)
 )
 
-hu_county[, state_fips := substring(co_fips, 1, 2)]
+hu_county[, state_fips := substring(county_fips, 1, 2)]
 
 # Merge with hu_county to get state names
 hu_county <- merge(
@@ -103,7 +103,7 @@ hu_county <- merge(
 )
 
 # Calculate median CAGR by state for ordering
-state_medians <- hu_county[, .(median_cagr = median(cagr_20_25, na.rm = TRUE)), by = state_name.x]
+state_medians <- hu_county[, .(median_cagr = median(cagr_20_apr_25_jul, na.rm = TRUE)), by = state_name.x]
 state_medians <- setorder(state_medians, -median_cagr)  # Sort in descending order
 
 # Create factor with levels ordered by median CAGR
@@ -115,9 +115,9 @@ hu_county$state_ordered <- factor(
 # Create the boxplot with ordered states
 boxplot <- plot_ly(
   hu_county,
-  #hu_county[cagr_20_25 <= 0.2],  # Filter out counties with cagr_25 > 0.2
+  #hu_county[cagr_20_apr_25_jul <= 0.2],  # Filter out counties with cagr_25 > 0.2
   y = ~state_ordered,  # Using the ordered factor
-  x = ~cagr_20_25,  # CAGR now on x-axis
+  x = ~cagr_20_apr_25_jul,  # CAGR now on x-axis
   type = "box",
   boxpoints = "all",
   jitter = 0.5,

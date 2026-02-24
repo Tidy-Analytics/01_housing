@@ -117,7 +117,7 @@ hu_tract_cbsa <- hu_tract_cbsa[, .(
 #################################### COUNTY LEVEL TRACT ROLLUP #############
 
 hu_tract_county <- as.data.table(
-  merge(hu_tract, hu_county, by.x = "county_fips", by.y = "co_fips", all.x = TRUE)
+  merge(hu_tract, hu_county, by.x = "county_fips", by.y = "county_fips", all.x = TRUE)
 )
 
 ################# RELATIVE INDEX COMPUTATIONS  -- COUNTY LEVEL

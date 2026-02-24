@@ -46,7 +46,7 @@ hu_us <- as.data.table(dbGetQuery(conh, "select * from hu_us"))
 
 county_to_cbsa <- as.data.table(dbGetQuery(congref, "select * from county_to_cbsa"))
 
-hu_county_cbsa <- merge(hu_county, county_to_cbsa, by.x = "co_fips", by.y = "county", all.x = TRUE)
+hu_county_cbsa <- merge(hu_county, county_to_cbsa, by.x = "county_fips", by.y = "county", all.x = TRUE)
 
 hu_county_cbsa <- as.data.table(
   merge(hu_county_cbsa, hu_cbsa, by.x = "cbsa23", by.y = "cbsa23", all.x = TRUE)
@@ -77,14 +77,14 @@ hu_county_cbsa[, idx_cbsa_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_j
 ## IDENTIFIERS; WE WILL NEED A PLANNING REGION TO CBSA CROSSWALK TO HANDLE THESE; THESE ROWS 
 ## WOULD REPLACE COUNTY-BASED DEFINITIONS
 
-hu_county_cbsa <- hu_county_cbsa[!is.na(co_fips), ]
+hu_county_cbsa <- hu_county_cbsa[!is.na(county_fips), ]
 
 hu_county_cbsa[is.na(cbsa23), cbsa23 := "CT000"]
 
 ## TRIM FILE
 
 hu_county_cbsa <- hu_county_cbsa[, .(
-  co_fips,
+  county_fips,
   cbsa23,
   idx_cbsa_hgi_20_apr_24_jul,
   idx_cbsa_hgi_24_jul_25_jul,
@@ -103,7 +103,7 @@ hu_county_cbsa <- hu_county_cbsa[, .(
 
 #### COUNTY TO STATE ################################
 
-hu_county[, state_fips := substr(co_fips, 1, 2)]
+hu_county[, state_fips := substr(county_fips, 1, 2)]
 
 hu_county_state <- as.data.table(
   merge(hu_county, hu_state, by.x = "state_fips", by.y = "state_code", all.x = TRUE)
@@ -129,12 +129,12 @@ hu_county_state[, idx_state_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr
 # agr_* indexes (annual growth rate)
 hu_county_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
 
-hu_county_state <- hu_county_state[!is.na(co_fips), ]
+hu_county_state <- hu_county_state[!is.na(county_fips), ]
 
 ## TRIM FILE
 
 hu_county_state <- hu_county_state[, .(
-  co_fips,
+  county_fips,
   state_fips,
   idx_state_hgi_20_apr_24_jul,
   idx_state_hgi_24_jul_25_jul,
@@ -225,7 +225,7 @@ hu_county_us[, pctl_us_agr_24_jul_25_jul := as.integer(
 )]
 
 hu_county_us <- hu_county_us[, .(
-  co_fips,
+  county_fips,
   idx_us_hgi_20_apr_24_jul,
   idx_us_hgi_24_jul_25_jul,
   idx_us_hgi_24_jul_25_nov,
@@ -263,9 +263,9 @@ hu_county_cbsa <- hu_county_cbsa |> mutate(across(where(is.character), stringi::
 hu_county_state <- hu_county_state |> mutate(across(where(is.character), stringi::stri_enc_tonative))
 hu_county_us <- hu_county_us |> mutate(across(where(is.character), stringi::stri_enc_tonative))
 
-hu_county_cbsa <- hu_county_cbsa[!is.na(co_fips), ]
-hu_county_state <- hu_county_state[!is.na(co_fips), ]
-hu_county_us <- hu_county_us[!is.na(co_fips), ]
+hu_county_cbsa <- hu_county_cbsa[!is.na(county_fips), ]
+hu_county_state <- hu_county_state[!is.na(county_fips), ]
+hu_county_us <- hu_county_us[!is.na(county_fips), ]
 
 dbWriteTable(conh, "hu_county_cbsa", hu_county_cbsa, overwrite = TRUE)
 dbWriteTable(conh, "hu_county_state", hu_county_state, overwrite = TRUE)

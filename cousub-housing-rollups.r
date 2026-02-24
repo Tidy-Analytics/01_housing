@@ -34,7 +34,7 @@ dbListTables(congeo)
 
 ## BASE GEOGRAPHY - ENTITY UNIVERSE FROM SPATIAL STORAGE
 
-hu_cousub_ids <- as.data.table(dbGetQuery(congeo, "select co_fips, cousubfp, name, namelsad as full_name, stusps from geo_cosub_23"))
+hu_cousub_ids <- as.data.table(dbGetQuery(congeo, "select co_fips as county_fips, cousubfp, name, namelsad as full_name, stusps from geo_cosub_23"))
 setnames(hu_cousub_ids, tolower)
 
 
@@ -73,12 +73,12 @@ hu_us <- as.data.table(dbGetQuery(conh, "select * from hu_us"))
 ### COUNTY LEVEL COUSUB ROLLUP ##########################################
 
 hu_cousub_base <- as.data.table(
-  merge(hu_cousub_ids, hu_cousub, by.x = c("co_fips","cousubfp"), by.y = c("co_fips", "cousub"), all.x = TRUE)
+  merge(hu_cousub_ids, hu_cousub, by.x = c("county_fips","cousubfp"), by.y = c("county_fips", "cousub"), all.x = TRUE)
   
 )
 
 hu_cousub_county <- as.data.table(
-  merge(hu_cousub_base, hu_county, by.x = c("co_fips"), by.y = c("co_fips"), all.x = TRUE)
+  merge(hu_cousub_base, hu_county, by.x = c("county_fips"), by.y = c("county_fips"), all.x = TRUE)
 )
 
 
@@ -106,7 +106,7 @@ hu_cousub_county[, idx_county_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_
 
 hu_cousub_county <- hu_cousub_county[, .(  
   cousubfp,
-  co_fips,
+  county_fips,
   idx_county_hgi_20_apr_24_jul,
   idx_county_hgi_24_jul_25_jul,
   idx_county_hgi_24_jul_25_nov,
@@ -133,14 +133,14 @@ county_to_cbsa <- fread(
 )
 
 hu_cousub_base <- as.data.table(
-  merge(hu_cousub_ids, hu_cousub, by.x = c("co_fips","cousubfp"), by.y = c("co_fips", "cousub"), all.x = TRUE)
+  merge(hu_cousub_ids, hu_cousub, by.x = c("county_fips","cousubfp"), by.y = c("county_fips", "cousub"), all.x = TRUE)
   
 )
 
-# match county_to_cbsa to get cbsa23 code for each cbsa, match on co_fips
+# match county_to_cbsa to get cbsa23 code for each cbsa, match on county_fips
 
 hu_cousub_cbsa_id <- as.data.table(
-  merge(hu_cousub_base, county_to_cbsa, by.x = c("co_fips"), by.y = c("county"), all.x = TRUE)
+  merge(hu_cousub_base, county_to_cbsa, by.x = c("county_fips"), by.y = c("county"), all.x = TRUE)
 )
 
 hu_cousub_cbsa <- as.data.table(
@@ -174,7 +174,7 @@ hu_cousub_cbsa[, idx_cbsa_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_j
 
 hu_cousub_cbsa <- hu_cousub_cbsa[, .(
   cousubfp,
-  co_fips,
+  county_fips,
   cbsa23,
   idx_cbsa_hgi_20_apr_24_jul,
   idx_cbsa_hgi_24_jul_25_jul,
@@ -193,7 +193,7 @@ hu_cousub_cbsa <- hu_cousub_cbsa[, .(
 
 ################################## STATE LEVEL COUSUB ROLLUP #############
 
-hu_cousub[, state_code := substr(co_fips, 1, 2)]
+hu_cousub[, state_code := substr(county_fips, 1, 2)]
 
 hu_cousub_state <- as.data.table(
   merge(hu_cousub, hu_state, by.x = "state_code", by.y = "state_code", all.x = TRUE)
@@ -225,7 +225,7 @@ hu_cousub_state <- hu_cousub_state[!is.na(cousub), ]
 
 hu_cousub_state <- hu_cousub_state[, .(
   cousub,
-  co_fips,
+  county_fips,
   state_code,
   idx_state_hgi_20_apr_24_jul,
   idx_state_hgi_24_jul_25_jul,
@@ -319,7 +319,7 @@ hu_cousub_us[, pctl_us_agr_24_jul_25_jul := as.integer(
 
 hu_cousub_us <- hu_cousub_us[, .(
   cousub,
-  co_fips,
+  county_fips,
   idx_us_hgi_20_apr_24_jul,
   idx_us_hgi_24_jul_25_jul,
   idx_us_hgi_24_jul_25_nov,
@@ -364,57 +364,6 @@ dbWriteTable(conh, "hu_cousub_cbsa", hu_cousub_cbsa, overwrite = TRUE)
 dbWriteTable(conh, "hu_cousub_state", hu_cousub_state, overwrite = TRUE)
 dbWriteTable(conh, "hu_cousub_us", hu_cousub_us, overwrite = TRUE)
 
-
 dbListTables(conh)
 
 
-### TEST QUERIES
-
-cousub_names <- setDT(dbGetQuery(
-  congeo,
-  "select co_fips, cousubfp, namelsad from geo_cosub_23
-   where substr(co_fips, 1, 2) = '27'"
-))
-setnames(cousub_names, tolower)
-
-cousub_indexes_us <- setDT(dbGetQuery(
-  conh,
-  "select * from hu_cousub_us where substr(co_fips, 1, 2) = '27'"
-))
-setnames(cousub_indexes, tolower)
-
-cousub_indexes_cbsa <- setDT(dbGetQuery(
-  conh,
-  "select * from hu_cousub_cbsa where substr(co_fips, 1, 2) = '27'"
-))
-setnames(cousub_indexes_cbsa, tolower)
-
-cousub_h <- setDT(dbGetQuery(
-  conh,
-  "select * from hu_cousub where substr(co_fips, 1, 2) = '27'"
-))
-setnames(cousub_h, tolower)
-
-mn_cousub_base <- merge(cousub_names, cousub_h, by.x = c("co_fips", "cousubfp"), by.y = c("co_fips", "cousub"))
-mn_cousub_ix_1 <- merge(mn_cousub_base, cousub_indexes_us, by.x = c("co_fips", "cousubfp"), by.y = c("co_fips", "cousub"))
-mn_cousub_ix_2 <- merge(mn_cousub_ix_1, cousub_indexes_cbsa, by.x = c("co_fips", "cousubfp"), by.y = c("co_fips", "cousubfp"))
-
-
-larger_cousubs <- mn_cousub_ix_2[hu_25_nov > 1000, ]
-
-library(reactable)
-
-reactable(
-  larger_cousubs[, .(namelsad, hu_25_nov, idx_us_hgi_20_apr_25_nov, idx_cbsa_hgi_20_apr_25_nov)],
-  columns = list(
-    namelsad = colDef(name = "County Subdivision"),
-    hu_25_nov = colDef(name = "Housing Units (Nov 2025)", format = colFormat(digits = 0)),
-    idx_us_hgi_20_apr_25_nov = colDef(name = "HGI Index vs US", format = colFormat(digits = 0)),
-    idx_cbsa_hgi_20_apr_25_nov = colDef(name = "HGI Index vs CBSA", format = colFormat(digits = 0))
-  ),
-  defaultPageSize = 10,
-  filterable = TRUE,
-  sortable = TRUE,
-  bordered = TRUE,
-  highlight = TRUE
-)

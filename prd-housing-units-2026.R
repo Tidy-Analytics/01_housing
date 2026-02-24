@@ -20,12 +20,7 @@ drv <- duckdb('./data/housing.duckdb')
 conh <- dbConnect(drv)
 dbListTables(conh)
 
-metadata <-dbGetQuery(conh, "SELECT * FROM metadata;")
-
-reactable(metadata, filterable = TRUE, searchable = TRUE,
-          pagination = TRUE, highlight = TRUE, bordered = TRUE,
-          striped = TRUE, compact = TRUE)
-
+### PRLIMINARIES ###########################################################################################################
 
 ### COUNTY TO CBSA CROSSWALK ####################################################
 
@@ -56,7 +51,7 @@ place_unique <- place_look[, .(place = unique(place)), by = placename]
 
 cousub_look <- data.table(
   dbGetQuery(congref, "select geoid,  cousub20 AS cousub, 
-    mcdname, county as co_fips from block_cosub;")
+    mcdname, county as county_fips from block_cosub;")
 )
 
 ua_look <- data.table(
@@ -74,7 +69,7 @@ co_id <- data.table(dbGetQuery(
 )
 )
 
-county_ids <- co_id[, .(fipscode = max(county_geoid)), by = county_name]
+county_ids <- co_id[, .(county_fips = max(county_geoid)), by = county_name]
 
 
 ### LOAD BLOCK MAPPING DATA FOR CONNECTICUT FIPS '09' ###########################
@@ -97,23 +92,10 @@ block_to_zcta <- data.table(
 )[!is.na(zcta_20), ]
 
 
-# nrow(block_to_zcta[, .N, by = zcta_20])
-
-# block_to_zcta <- merge(
-#    block_to_zcta, 
-#    ct_remap_id,
-#    by.x = "block_geoid",
-#    by.y = "block_fips_2020",
-#    all.x = TRUE
-#  )
-
-# IF STATE IS CONNECTICUT THEN MAP OLD BLOCK ID TO NEW BLOCK ID BASED ON PLANNING REGION
-#block_to_zcta[substr(block_geoid, 1, 2) == "09", block_geoid := block_fips_2022]
-
-
-######################################################################################
+### END OF PRLIMINARIES ######################################################################################################
 
 # Function to process data for a single state
+
 state_HU_data <- function(state_code, state_name) {
   # Read 2020 data
   HU_20 <- data.table(
@@ -149,8 +131,7 @@ state_HU_data <- function(state_code, state_name) {
   
   HU_24 <- setorder(HU_24, -total_housing_units)
 
-## LATEST, RELEASED SEPTEMBER 2025 (JULY 2025 VINTAGE)
-
+## JULY 2025 VINTAGE
 
   HU_25_jul <- data.table(
     dbGetQuery(
@@ -320,12 +301,12 @@ state_HU_data <- function(state_code, state_name) {
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_recs = .N)
     ),
-    by = .(co_fips = substring(block_geoid, 1, 5)),
+    by = .(county_fips = substring(block_geoid, 1, 5)),
     .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
   # Attach county names
-  HU_co <- merge(HU_co, county_ids, by.x = "co_fips", by.y = "fipscode", all.x = TRUE)
+  HU_co <- merge(HU_co, county_ids, by.x = "county_fips", by.y = "county_fips", all.x = TRUE)
 
   # Add state information
   HU_co[, state_code := state_code]
@@ -351,7 +332,7 @@ state_HU_data <- function(state_code, state_name) {
   ## COUSUB ########################################################################
 
   ## FIX KEY CONSTRUCTION ERROR 12/8/25:
-  ## SHOULD BE CO_FIPS + COUSUB NOT COUSUB + STATE FIPS
+  ## SHOULD BE county_fips + COUSUB NOT COUSUB + STATE FIPS
   ## UNIQUE KEY IS 10 CHARACTERS
   
   HU_cousub  <- HU_block[
@@ -360,11 +341,11 @@ state_HU_data <- function(state_code, state_name) {
       setNames(lapply(.SD, function(x) sum(x, na.rm = TRUE)), names(.SD)),
       .(block_recs = .N)
     ),
-    by = .(co_fips, cousub),
+    by = .(county_fips, cousub),
     .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
 
-  # wrong key; added co_fips to aggregation
+  # wrong key; added county_fips to aggregation
   # Add state information to county subdivision
   #HU_cousub[, state_code := state_code]
   
@@ -396,6 +377,7 @@ state_HU_data <- function(state_code, state_name) {
     .SDcols = c("HU_20_apr", "gq_20_apr", "HU_24_jul", "gq_24_jul", "HU_25_jul", "gq_25_jul", "HU_25_nov", "gq_25_nov")
   ]
   # Add state information to urban area
+  # note that this comes from the current loop state and allows for UA comparisons within state in indexing calculations
   HU_ua[, state_code := state_code]
 
   # Return all data tables###################################################################

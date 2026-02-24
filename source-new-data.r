@@ -1,5 +1,5 @@
 #### GET HOUSING files
-### use 
+### SOURCES DATA FROM CENSUS BUREAU SITE VIA WGET
 
 library(DBI)
 library(duckdb)
@@ -56,6 +56,5 @@ for (i in seq_along(states_list$state_code)) {
   # Use wget to download the file
   system(paste("wget", "-O", shQuote(filepath), shQuote(url)))
 }
-s
 
   ## example: https://www2.census.gov/geo/pvs/addcountlisting/2025/01_Alabama_AddressBlockCountList_122025.txt
