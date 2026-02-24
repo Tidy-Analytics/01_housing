@@ -66,10 +66,17 @@ out_path <- "./data/housing_distro.duckdb"
 if (file.exists(out_path)) file.remove(out_path)
 cono <- dbConnect(duckdb(), out_path)
 
+unlink("./data/parquet", recursive = TRUE)
+unlink("./data/csv",     recursive = TRUE)
+dir.create("./data/parquet", showWarnings = FALSE, recursive = TRUE)
+dir.create("./data/csv",     showWarnings = FALSE, recursive = TRUE)
+
 ### HELPERS -------------------------------------------------------------------
 
 write_layer <- function(dt, table_name) {
   dbWriteTable(cono, table_name, as.data.frame(dt), overwrite = TRUE)
+  dbExecute(cono, sprintf("COPY %s TO './data/parquet/%s.parquet' (FORMAT PARQUET)", table_name, table_name))
+  fwrite(dt, sprintf("./data/csv/%s.csv", table_name))
   cat(sprintf("  Written: %s (%d rows x %d cols)\n", table_name, nrow(dt), ncol(dt)))
 }
 
@@ -425,4 +432,4 @@ dbDisconnect(conh, shutdown = TRUE)
 dbDisconnect(congeo, shutdown = TRUE)
 dbDisconnect(congref, shutdown = TRUE)
 
-cat("\nDone. Output: ./data/housing_distro.duckdb\n")
+cat("\nDone. Outputs:\n  ./data/housing_distro.duckdb\n  ./data/parquet/  (one .parquet per layer)\n  ./data/csv/      (one .csv per layer)\n")
