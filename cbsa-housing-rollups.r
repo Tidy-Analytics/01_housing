@@ -89,44 +89,44 @@ hu_cbsa_us <- hu_cbsa_us[!is.na(cbsa23), ]
 
 # Percentiles for hgi_* metrics
 hu_cbsa_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
-  ceiling(frank(hgi_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_24_jul.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
-  ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_jul.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
-  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_nov.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
-  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_25_nov.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
-  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_jul.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
-  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_nov.x)) * 100)
 )]
 
 # Percentiles for cagr_* metrics
 hu_cbsa_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
-  ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_24_jul.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
-  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_24_jul_25_nov.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
-  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_25_jul_25_nov.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
-  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_jul.x)) * 100)
 )]
 hu_cbsa_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
-  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_nov.x)) * 100)
 )]
 
 # Percentiles for agr_* metrics
 hu_cbsa_us[, pctl_us_agr_24_jul_25_jul := as.integer(
-  ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / .N * 100)
+  ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_24_jul_25_jul.x)) * 100)
 )]
 
 

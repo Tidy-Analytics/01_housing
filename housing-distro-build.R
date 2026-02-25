@@ -95,13 +95,24 @@ add_base_label <- function(idx_dt, id_col, name_lut, label_col) {
 
 
 ### ===========================================================================
-### 1. BLOCK — base measures only, carried forward as-is
+### 1. BLOCK
+###    Indexes: county, cbsa, state, us (in that order)
 ### ===========================================================================
 
 cat("Building block...\n")
 
-block <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block"))
-write_layer(block, "block")
+bl_base <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block"))
+bl_cty  <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_county"))
+bl_cbsa <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_cbsa"))
+bl_st   <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_state"))
+bl_us   <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_us"))
+
+write_layer(bl_base, "block")
+write_layer(bl_cty, "block_county")
+write_layer(bl_cbsa, "block_cbsa")
+write_layer(bl_st, "block_state")
+write_layer(bl_us, "block_us")
+
 
 
 ### ===========================================================================

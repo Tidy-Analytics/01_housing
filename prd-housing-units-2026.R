@@ -506,6 +506,9 @@ combined_zcta_data <- combined_zcta_data_raw[
 
 
 # Apply ratio and CAGR calculations to combined datasets
+# ADD BLOCK METRICS FOR NOV 26 RELEASE
+
+combined_block_data <- calculate_hu_indices(combined_block_data)
 combined_block_group_data <- calculate_hu_indices(combined_block_group_data)
 combined_tract_data <- calculate_hu_indices(combined_tract_data)
 combined_county_data <- calculate_hu_indices(combined_county_data)
@@ -603,9 +606,6 @@ hu_block_group <- as.data.table(
 )
 hu_block_group[, county_fips := substr(block_group, 1, 5)]
 
-dbGetQuery(conh, "SELECT * FROM county_cbsa_lookup;")
-
-
 hu_block_group <- merge(
   hu_block_group,
   county_to_cbsa,
@@ -645,5 +645,4 @@ saveRDS(hu_cbsa, "hu_cbsa.rds")
 
 # Close the database connection
 dbDisconnect(conh)
-
 
