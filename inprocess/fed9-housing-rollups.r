@@ -7,7 +7,6 @@
 library(duckdb)
 library(data.table)
 library(DBI)
-library(dplyr)
 library(dotenv)
 
 setwd("/home/joel")
@@ -380,11 +379,17 @@ cat("Counties in 9th district:", nrow(hu_co_fed9), "\n")
 ### WRITE ALL OUTPUTS TO DUCKDB ###############################################
 
 ## UTF encoding fix (consistent with other rollup scripts)
-hu_bg_fed9  <- hu_bg_fed9  |> mutate(across(where(is.character), stringi::stri_enc_tonative))
-hu_tr_fed9  <- hu_tr_fed9  |> mutate(across(where(is.character), stringi::stri_enc_tonative))
-hu_zc_fed9  <- hu_zc_fed9  |> mutate(across(where(is.character), stringi::stri_enc_tonative))
-hu_cs_fed9  <- hu_cs_fed9  |> mutate(across(where(is.character), stringi::stri_enc_tonative))
-hu_co_fed9  <- hu_co_fed9  |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+char_cols <- function(dt) names(dt)[vapply(dt, is.character, logical(1))]
+cc <- char_cols(hu_bg_fed9)
+if (length(cc)) hu_bg_fed9[, (cc) := lapply(.SD, stringi::stri_enc_tonative), .SDcols = cc]
+cc <- char_cols(hu_tr_fed9)
+if (length(cc)) hu_tr_fed9[, (cc) := lapply(.SD, stringi::stri_enc_tonative), .SDcols = cc]
+cc <- char_cols(hu_zc_fed9)
+if (length(cc)) hu_zc_fed9[, (cc) := lapply(.SD, stringi::stri_enc_tonative), .SDcols = cc]
+cc <- char_cols(hu_cs_fed9)
+if (length(cc)) hu_cs_fed9[, (cc) := lapply(.SD, stringi::stri_enc_tonative), .SDcols = cc]
+cc <- char_cols(hu_co_fed9)
+if (length(cc)) hu_co_fed9[, (cc) := lapply(.SD, stringi::stri_enc_tonative), .SDcols = cc]
 
 dbWriteTable(conh, "hu_block_group_fed9", hu_bg_fed9, overwrite = TRUE)
 dbWriteTable(conh, "hu_tract_fed9",       hu_tr_fed9, overwrite = TRUE)

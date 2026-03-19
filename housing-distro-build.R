@@ -6,7 +6,7 @@ setwd("/home/joel")
 
 ### CONNECTIONS ---------------------------------------------------------------
 
-conh <- dbConnect(duckdb(), "./data/housing.duckdb")
+conh <- dbConnect(duckdb(), "./data/housing_distro.duckdb")
 
 congeo <- dbConnect(
   duckdb::duckdb(),
@@ -102,18 +102,66 @@ add_base_label <- function(idx_dt, id_col, name_lut, label_col) {
 cat("Building block...\n")
 
 bl_base <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block"))
+
+## FILTER: NA geoid, OR zero hu in all periods AND zero gq in all periods
+hu_cols <- grep("^HU_", names(bl_base), value = TRUE)
+gq_cols <- grep("^gq_", names(bl_base), value = TRUE)
+
+bl_base <- bl_base[!is.na(block_geoid)]
+bl_base <- bl_base[rowSums(bl_base[, ..hu_cols]) > 0 | rowSums(bl_base[, ..gq_cols]) > 0]
+
+## block to county ####################
+
 bl_cty  <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_county"))
+
+## FILTER: NA geoid
+# dedupe
+
+bl_cty <- bl_cty[!is.na(block_geoid)]
+bl_cty <- unique(bl_cty, by = "block_geoid")
+
+## block to cbsa ####################
+
 bl_cbsa <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_cbsa"))
+
+## FILTER: NA geoid
+# dedupe
+
+bl_cbsa <- bl_cbsa[!is.na(block_geoid)]
+bl_cbsa <- unique(bl_cbsa, by = "block_geoid")
+
+## block to state ####################
+
 bl_st   <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_state"))
+
+## FILTER: NA geoid
+# dedupe
+
+bl_st <- bl_st[!is.na(block_geoid)]
+bl_st <- unique(bl_st, by = "block_geoid")
+
+## block to us ####################
+
 bl_us   <- as.data.table(dbGetQuery(conh, "SELECT * FROM hu_block_us"))
+
+## FILTER: NA geoid
+# dedupe
+
+bl_us <- bl_us[!is.na(block_geoid)]
+bl_us <- unique(bl_us, by = "block_geoid")
+
+## leave tables separate; however, filter
+## the bl_cty, bl_st, bl_cbsa, and bl_us tables to the same set of block_geoids as the base table
+bl_cty <- bl_cty[block_geoid %in% bl_base$block_geoid]
+bl_cbsa <- bl_cbsa[block_geoid %in% bl_base$block_geoid]
+bl_st <- bl_st[block_geoid %in% bl_base$block_geoid]
+bl_us <- bl_us[block_geoid %in% bl_base$block_geoid]
 
 write_layer(bl_base, "block")
 write_layer(bl_cty, "block_county")
 write_layer(bl_cbsa, "block_cbsa")
 write_layer(bl_st, "block_state")
 write_layer(bl_us, "block_us")
-
-
 
 ### ===========================================================================
 ### 2. BLOCK GROUP
@@ -152,6 +200,7 @@ bg <- merge(bg, bg_us[, c("block_group", bg_us_cols), with = FALSE],
 
 write_layer(bg, "block_group")
 
+t(dbGetQuery(cono, "SELECT * FROM block_group WHERE block_group = '060014018001'"))
 
 ### ===========================================================================
 ### 3. CENSUS TRACT
@@ -381,7 +430,6 @@ cbsa <- merge(cbsa, cbsa_us, by = "cbsa23", all.x = TRUE)
 
 write_layer(cbsa, "cbsa")
 
-
 ### ===========================================================================
 ### 10. STATE
 ###     Key: state_code
@@ -444,3 +492,9 @@ dbDisconnect(congeo, shutdown = TRUE)
 dbDisconnect(congref, shutdown = TRUE)
 
 cat("\nDone. Outputs:\n  ./data/housing_distro.duckdb\n  ./data/parquet/  (one .parquet per layer)\n  ./data/csv/      (one .csv per layer)\n")
+
+
+
+fwrite(as.data.table(dbGetQuery(conh, "select * from cbsa")), "./data/cbsa.csv")
+fwrite(as.data.table(dbGetQuery(conh, "select * from place")), "./data/place.csv")
+
