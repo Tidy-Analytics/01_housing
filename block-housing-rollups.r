@@ -76,20 +76,16 @@ hu_block_cbsa <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_block_cbsa[, idx_cbsa_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_block_cbsa[, idx_cbsa_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_block_cbsa[, idx_cbsa_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_block_cbsa[, idx_cbsa_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_block_cbsa[, idx_cbsa_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_block_cbsa[, idx_cbsa_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_block_cbsa[, idx_cbsa_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_block_cbsa[, idx_cbsa_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_block_cbsa[, idx_cbsa_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_block_cbsa[, idx_cbsa_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_block_cbsa[, idx_cbsa_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_block_cbsa[, idx_cbsa_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_block_cbsa[, idx_cbsa_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_block_cbsa[, idx_cbsa_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_block_cbsa[, idx_cbsa_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_block_cbsa[, idx_cbsa_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 ## NULL CBSA ARE CONNECTICUT BLOCK GROUPS; CBSA DEFINITIONS BASED ON NEW PLANNING REGION
 ## COMPONENTS ARE NOT YET DEFINED; WE ARE USING NEW PLANNING REGION IDS IN OUR BLOCK GROUP
@@ -107,16 +103,12 @@ hu_block_cbsa <- hu_block_cbsa[, .(
   cbsa23,
   idx_cbsa_hgi_20_apr_24_jul,
   idx_cbsa_hgi_24_jul_25_jul,
-  idx_cbsa_hgi_24_jul_25_nov,
-  idx_cbsa_hgi_25_jul_25_nov,
-  idx_cbsa_hgi_20_apr_25_jul,
-  idx_cbsa_hgi_20_apr_25_nov,
+  idx_cbsa_hgi_25_jul_26_jul,
+  idx_cbsa_hgi_20_apr_26_jul,
   idx_cbsa_cagr_20_apr_24_jul,
-  idx_cbsa_cagr_24_jul_25_nov,
-  idx_cbsa_cagr_25_jul_25_nov,
-  idx_cbsa_cagr_20_apr_25_jul,
-  idx_cbsa_cagr_20_apr_25_nov,
-  idx_cbsa_agr_24_jul_25_jul
+  idx_cbsa_cagr_20_apr_26_jul,
+  idx_cbsa_agr_24_jul_25_jul,
+  idx_cbsa_agr_25_jul_26_jul
 )]
 
 #################################### COUNTY LEVEL BLOCK ROLLUP #############
@@ -130,20 +122,16 @@ hu_block_county <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_block_county[, idx_county_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_block_county[, idx_county_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_block_county[, idx_county_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_block_county[, idx_county_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_block_county[, idx_county_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_block_county[, idx_county_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_block_county[, idx_county_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_block_county[, idx_county_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_block_county[, idx_county_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_block_county[, idx_county_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_block_county[, idx_county_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_block_county[, idx_county_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_block_county[, idx_county_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_block_county[, idx_county_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_block_county[, idx_county_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_block_county[, idx_county_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 hu_block_county <- hu_block_county[!is.na(block_geoid), ]
 
@@ -154,16 +142,12 @@ hu_block_county <- hu_block_county[, .(
   county_fips,
   idx_county_hgi_20_apr_24_jul,
   idx_county_hgi_24_jul_25_jul,
-  idx_county_hgi_24_jul_25_nov,
-  idx_county_hgi_25_jul_25_nov,
-  idx_county_hgi_20_apr_25_jul,
-  idx_county_hgi_20_apr_25_nov,
+  idx_county_hgi_25_jul_26_jul,
+  idx_county_hgi_20_apr_26_jul,
   idx_county_cagr_20_apr_24_jul,
-  idx_county_cagr_24_jul_25_nov,
-  idx_county_cagr_25_jul_25_nov,
-  idx_county_cagr_20_apr_25_jul,
-  idx_county_cagr_20_apr_25_nov,
-  idx_county_agr_24_jul_25_jul
+  idx_county_cagr_20_apr_26_jul,
+  idx_county_agr_24_jul_25_jul,
+  idx_county_agr_25_jul_26_jul
 )]
 
 ################################## STATE LEVEL BG ROLLUP #############
@@ -179,20 +163,16 @@ hu_block_state <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_block_state[, idx_state_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_block_state[, idx_state_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_block_state[, idx_state_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_block_state[, idx_state_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_block_state[, idx_state_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_block_state[, idx_state_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_block_state[, idx_state_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_block_state[, idx_state_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_block_state[, idx_state_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_block_state[, idx_state_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_block_state[, idx_state_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_block_state[, idx_state_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_block_state[, idx_state_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_block_state[, idx_state_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_block_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_block_state[, idx_state_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 hu_block_state <- hu_block_state[!is.na(block_geoid), ]
 
@@ -203,16 +183,12 @@ hu_block_state <- hu_block_state[, .(
   state_fips,
   idx_state_hgi_20_apr_24_jul,
   idx_state_hgi_24_jul_25_jul,
-  idx_state_hgi_24_jul_25_nov,
-  idx_state_hgi_25_jul_25_nov,
-  idx_state_hgi_20_apr_25_jul,
-  idx_state_hgi_20_apr_25_nov,
+  idx_state_hgi_25_jul_26_jul,
+  idx_state_hgi_20_apr_26_jul,
   idx_state_cagr_20_apr_24_jul,
-  idx_state_cagr_24_jul_25_nov,
-  idx_state_cagr_25_jul_25_nov,
-  idx_state_cagr_20_apr_25_jul,
-  idx_state_cagr_20_apr_25_nov,
-  idx_state_agr_24_jul_25_jul
+  idx_state_cagr_20_apr_26_jul,
+  idx_state_agr_24_jul_25_jul,
+  idx_state_agr_25_jul_26_jul
 )]
 
 ################################## US LEVEL BG ROLLUP #############
@@ -229,20 +205,16 @@ hu_block_us <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_block_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_block_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_block_us[, idx_us_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_block_us[, idx_us_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_block_us[, idx_us_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_block_us[, idx_us_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_block_us[, idx_us_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_block_us[, idx_us_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_block_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_block_us[, idx_us_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_block_us[, idx_us_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_block_us[, idx_us_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_block_us[, idx_us_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_block_us[, idx_us_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_block_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_block_us[, idx_us_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 
 ### COMPUTE NATIONAL PERCENTILES FOR BLOCKS
@@ -254,67 +226,47 @@ hu_block_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
 hu_block_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
   ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_jul.x)) * 100)
 )]
-hu_block_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
-  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_nov.x)) * 100)
+hu_block_us[, pctl_us_hgi_25_jul_26_jul := as.integer(
+  ceiling(frank(hgi_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_26_jul.x)) * 100)
 )]
-hu_block_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
-  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_25_nov.x)) * 100)
-)]
-hu_block_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
-  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_jul.x)) * 100)
-)]
-hu_block_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
-  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_nov.x)) * 100)
+hu_block_us[, pctl_us_hgi_20_apr_26_jul := as.integer(
+  ceiling(frank(hgi_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for cagr_* metrics
 hu_block_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
   ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_24_jul.x)) * 100)
 )]
-hu_block_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
-  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_24_jul_25_nov.x)) * 100)
-)]
-hu_block_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
-  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_25_jul_25_nov.x)) * 100)
-)]
-hu_block_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
-  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_jul.x)) * 100)
-)]
-hu_block_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
-  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_nov.x)) * 100)
+hu_block_us[, pctl_us_cagr_20_apr_26_jul := as.integer(
+  ceiling(frank(cagr_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for agr_* metrics
 hu_block_us[, pctl_us_agr_24_jul_25_jul := as.integer(
   ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_24_jul_25_jul.x)) * 100)
 )]
+hu_block_us[, pctl_us_agr_25_jul_26_jul := as.integer(
+  ceiling(frank(agr_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_25_jul_26_jul.x)) * 100)
+)]
 
 hu_block_us <- hu_block_us[, .(
   block_geoid,
   idx_us_hgi_20_apr_24_jul,
   idx_us_hgi_24_jul_25_jul,
-  idx_us_hgi_24_jul_25_nov,
-  idx_us_hgi_25_jul_25_nov,
-  idx_us_hgi_20_apr_25_jul,
-  idx_us_hgi_20_apr_25_nov,
+  idx_us_hgi_25_jul_26_jul,
+  idx_us_hgi_20_apr_26_jul,
   idx_us_cagr_20_apr_24_jul,
-  idx_us_cagr_24_jul_25_nov,
-  idx_us_cagr_25_jul_25_nov,
-  idx_us_cagr_20_apr_25_jul,
-  idx_us_cagr_20_apr_25_nov,
+  idx_us_cagr_20_apr_26_jul,
   idx_us_agr_24_jul_25_jul,
+  idx_us_agr_25_jul_26_jul,
   pctl_us_hgi_20_apr_24_jul,
   pctl_us_hgi_24_jul_25_jul,
-  pctl_us_hgi_24_jul_25_nov,
-  pctl_us_hgi_25_jul_25_nov,
-  pctl_us_hgi_20_apr_25_jul,
-  pctl_us_hgi_20_apr_25_nov,
+  pctl_us_hgi_25_jul_26_jul,
+  pctl_us_hgi_20_apr_26_jul,
   pctl_us_cagr_20_apr_24_jul,
-  pctl_us_cagr_24_jul_25_nov,
-  pctl_us_cagr_25_jul_25_nov,
-  pctl_us_cagr_20_apr_25_jul,
-  pctl_us_cagr_20_apr_25_nov,
-  pctl_us_agr_24_jul_25_jul
+  pctl_us_cagr_20_apr_26_jul,
+  pctl_us_agr_24_jul_25_jul,
+  pctl_us_agr_25_jul_26_jul
 )]
 
 

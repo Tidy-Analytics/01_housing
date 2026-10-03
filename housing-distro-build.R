@@ -6,7 +6,7 @@ setwd("/home/joel")
 
 ### CONNECTIONS ---------------------------------------------------------------
 
-conh <- dbConnect(duckdb(), "./data/housing_distro.duckdb")
+conh <- dbConnect(duckdb(), "./data/housing.duckdb")
 
 congeo <- dbConnect(
   duckdb::duckdb(),
@@ -484,6 +484,9 @@ for (tbl in dbListTables(cono)) {
   cat(sprintf("  %-22s %d cols\n", tbl, nrow(info)))
 }
 
+fwrite(as.data.table(dbGetQuery(cono, "select * from cbsa")), "./data/cbsa.csv")
+fwrite(as.data.table(dbGetQuery(cono, "select * from place")), "./data/place.csv")
+
 ### CLOSE CONNECTIONS ---------------------------------------------------------
 
 dbDisconnect(cono, shutdown = TRUE)
@@ -492,9 +495,4 @@ dbDisconnect(congeo, shutdown = TRUE)
 dbDisconnect(congref, shutdown = TRUE)
 
 cat("\nDone. Outputs:\n  ./data/housing_distro.duckdb\n  ./data/parquet/  (one .parquet per layer)\n  ./data/csv/      (one .csv per layer)\n")
-
-
-
-fwrite(as.data.table(dbGetQuery(conh, "select * from cbsa")), "./data/cbsa.csv")
-fwrite(as.data.table(dbGetQuery(conh, "select * from place")), "./data/place.csv")
 

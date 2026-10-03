@@ -90,8 +90,10 @@ zcta_to_county <- zcta_to_county[, .(geoid_zcta5_20, geoid_county_20)]
 zcta_to_state <-  unique(zcta_to_county[, .(geoid_zcta5_20, state_fips = substr(geoid_county_20, 1, 2))])
 
 
-## RETRIEVE STATE NAMES FROM TIGRIS
-states <- data.table(tigris::states())
+## RETRIEVE STATE NAMES FROM LOCAL SPATIAL STORAGE (tigris::states() FTP download unreliable)
+congeo <- dbConnect(duckdb('./data/spatial_storage.duckdb', read_only = TRUE))
+states <- data.table(dbGetQuery(congeo, "select statefp AS GEOID, name AS NAME from geo_state"))
+dbDisconnect(congeo, shutdown = TRUE)
 zcta_to_state <- merge(zcta_to_state, states[, .(GEOID, NAME)], by.x = "state_fips", by.y = "GEOID", all.x = TRUE)
 
 dbWriteTable(congref, "zcta_to_state", zcta_to_state, overwrite = TRUE)
@@ -118,20 +120,16 @@ hu_zcta_state <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_zcta_state[, idx_state_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_zcta_state[, idx_state_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_zcta_state[, idx_state_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_zcta_state[, idx_state_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_zcta_state[, idx_state_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_zcta_state[, idx_state_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_zcta_state[, idx_state_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_zcta_state[, idx_state_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_zcta_state[, idx_state_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_zcta_state[, idx_state_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_zcta_state[, idx_state_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_zcta_state[, idx_state_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_zcta_state[, idx_state_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_zcta_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_zcta_state[, idx_state_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 ## TRIM FILE
 
@@ -140,16 +138,12 @@ hu_zcta_state <- hu_zcta_state[, .(
   state_fips,
   idx_state_hgi_20_apr_24_jul,
   idx_state_hgi_24_jul_25_jul,
-  idx_state_hgi_24_jul_25_nov,
-  idx_state_hgi_25_jul_25_nov,
-  idx_state_hgi_20_apr_25_jul,
-  idx_state_hgi_20_apr_25_nov,
+  idx_state_hgi_25_jul_26_jul,
+  idx_state_hgi_20_apr_26_jul,
   idx_state_cagr_20_apr_24_jul,
-  idx_state_cagr_24_jul_25_nov,
-  idx_state_cagr_25_jul_25_nov,
-  idx_state_cagr_20_apr_25_jul,
-  idx_state_cagr_20_apr_25_nov,
-  idx_state_agr_24_jul_25_jul
+  idx_state_cagr_20_apr_26_jul,
+  idx_state_agr_24_jul_25_jul,
+  idx_state_agr_25_jul_26_jul
 )]
 
 
@@ -162,20 +156,16 @@ hu_zcta_us <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_zcta_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_zcta_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_zcta_us[, idx_us_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_zcta_us[, idx_us_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_zcta_us[, idx_us_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_zcta_us[, idx_us_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_zcta_us[, idx_us_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_zcta_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_zcta_us[, idx_us_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_zcta_us[, idx_us_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_zcta_us[, idx_us_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_zcta_us[, idx_us_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_zcta_us[, idx_us_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_zcta_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_zcta_us[, idx_us_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 
 ### COMPUTE NATIONAL PERCENTILES FOR ZCTAs
@@ -187,39 +177,27 @@ hu_zcta_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
 hu_zcta_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
   ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_jul.x)) * 100)
 )]
-hu_zcta_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
-  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_nov.x)) * 100)
+hu_zcta_us[, pctl_us_hgi_25_jul_26_jul := as.integer(
+  ceiling(frank(hgi_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_26_jul.x)) * 100)
 )]
-hu_zcta_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
-  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_25_nov.x)) * 100)
-)]
-hu_zcta_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
-  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_jul.x)) * 100)
-)]
-hu_zcta_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
-  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_nov.x)) * 100)
+hu_zcta_us[, pctl_us_hgi_20_apr_26_jul := as.integer(
+  ceiling(frank(hgi_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for cagr_* metrics
 hu_zcta_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
   ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_24_jul.x)) * 100)
 )]
-hu_zcta_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
-  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_24_jul_25_nov.x)) * 100)
-)]
-hu_zcta_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
-  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_25_jul_25_nov.x)) * 100)
-)]
-hu_zcta_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
-  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_jul.x)) * 100)
-)]
-hu_zcta_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
-  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_nov.x)) * 100)
+hu_zcta_us[, pctl_us_cagr_20_apr_26_jul := as.integer(
+  ceiling(frank(cagr_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for agr_* metrics
 hu_zcta_us[, pctl_us_agr_24_jul_25_jul := as.integer(
   ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_24_jul_25_jul.x)) * 100)
+)]
+hu_zcta_us[, pctl_us_agr_25_jul_26_jul := as.integer(
+  ceiling(frank(agr_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_25_jul_26_jul.x)) * 100)
 )]
 
 
@@ -227,28 +205,20 @@ hu_zcta_us <- hu_zcta_us[, .(
   zcta_20,
   idx_us_hgi_20_apr_24_jul,
   idx_us_hgi_24_jul_25_jul,
-  idx_us_hgi_24_jul_25_nov,
-  idx_us_hgi_25_jul_25_nov,
-  idx_us_hgi_20_apr_25_jul,
-  idx_us_hgi_20_apr_25_nov,
+  idx_us_hgi_25_jul_26_jul,
+  idx_us_hgi_20_apr_26_jul,
   idx_us_cagr_20_apr_24_jul,
-  idx_us_cagr_24_jul_25_nov,
-  idx_us_cagr_25_jul_25_nov,
-  idx_us_cagr_20_apr_25_jul,
-  idx_us_cagr_20_apr_25_nov,
+  idx_us_cagr_20_apr_26_jul,
   idx_us_agr_24_jul_25_jul,
+  idx_us_agr_25_jul_26_jul,
   pctl_us_hgi_20_apr_24_jul,
   pctl_us_hgi_24_jul_25_jul,
-  pctl_us_hgi_24_jul_25_nov,
-  pctl_us_hgi_25_jul_25_nov,
-  pctl_us_hgi_20_apr_25_jul,
-  pctl_us_hgi_20_apr_25_nov,
+  pctl_us_hgi_25_jul_26_jul,
+  pctl_us_hgi_20_apr_26_jul,
   pctl_us_cagr_20_apr_24_jul,
-  pctl_us_cagr_24_jul_25_nov,
-  pctl_us_cagr_25_jul_25_nov,
-  pctl_us_cagr_20_apr_25_jul,
-  pctl_us_cagr_20_apr_25_nov,
-  pctl_us_agr_24_jul_25_jul
+  pctl_us_cagr_20_apr_26_jul,
+  pctl_us_agr_24_jul_25_jul,
+  pctl_us_agr_25_jul_26_jul
 )]
 
 ## MERGE STATE AND US ROLLUPS INTO hu_zcta
@@ -270,11 +240,11 @@ dbWriteTable(conh, "hu_zcta_us", hu_zcta_us, overwrite = TRUE)
 #### ZCTA INDEXES COMPLETE ###############################
 
 
-# # use plotly to show a scatter plot of pctl_us_hgi_20_apr_24_jul vs pctl_us_hgi_25_jul_25_nov
+# # use plotly to show a scatter plot of pctl_us_hgi_20_apr_24_jul vs pctl_us_hgi_25_jul_26_jul
 # plot_ly(
 #   hu_zcta_us,
 #   x = ~pctl_us_hgi_20_apr_24_jul,
-#   y = ~pctl_us_hgi_24_jul_25_nov,
+#   y = ~pctl_us_hgi_25_jul_26_jul,
 #   type = "scatter",
 #   mode = "markers"
 # )

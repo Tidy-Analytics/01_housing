@@ -40,9 +40,7 @@ tables <- dbGetQuery(conmeta, "select * from table_summary")
 
 # county to metro area crosswalk
 
-county_to_cbsa <- fread("./data/county-cbsa-lookup.csv", 
-                        colClasses = c("character", "character", "character"),
-                        col.names = c("county", "cbsa23", "cbsa_title"))
+county_to_cbsa <- fread("./data/county-cbsa-lookup.csv", colClasses = "character")
 
 ## BASE GEOGRAPHY
 
@@ -67,20 +65,16 @@ hu_cbsa_us <- as.data.table(
 # hgi_* indexes (housing growth index)
 hu_cbsa_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
 hu_cbsa_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
-hu_cbsa_us[, idx_us_hgi_24_jul_25_nov := (hgi_24_jul_25_nov.x - 1) / (hgi_24_jul_25_nov.y - 1) * 100]
-hu_cbsa_us[, idx_us_hgi_25_jul_25_nov := (hgi_25_jul_25_nov.x - 1) / (hgi_25_jul_25_nov.y - 1) * 100]
-hu_cbsa_us[, idx_us_hgi_20_apr_25_jul := (hgi_20_apr_25_jul.x - 1) / (hgi_20_apr_25_jul.y - 1) * 100]
-hu_cbsa_us[, idx_us_hgi_20_apr_25_nov := (hgi_20_apr_25_nov.x - 1) / (hgi_20_apr_25_nov.y - 1) * 100]
+hu_cbsa_us[, idx_us_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_cbsa_us[, idx_us_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
 # cagr_* indexes (compound annual growth rate)
 hu_cbsa_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
-hu_cbsa_us[, idx_us_cagr_24_jul_25_nov := (cagr_24_jul_25_nov.x) / (cagr_24_jul_25_nov.y) * 100]
-hu_cbsa_us[, idx_us_cagr_25_jul_25_nov := (cagr_25_jul_25_nov.x) / (cagr_25_jul_25_nov.y) * 100]
-hu_cbsa_us[, idx_us_cagr_20_apr_25_jul := (cagr_20_apr_25_jul.x) / (cagr_20_apr_25_jul.y) * 100]
-hu_cbsa_us[, idx_us_cagr_20_apr_25_nov := (cagr_20_apr_25_nov.x) / (cagr_20_apr_25_nov.y) * 100]
+hu_cbsa_us[, idx_us_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
 
 # agr_* indexes (annual growth rate)
 hu_cbsa_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_cbsa_us[, idx_us_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 hu_cbsa_us <- hu_cbsa_us[!is.na(cbsa23), ]
 
@@ -94,39 +88,27 @@ hu_cbsa_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
 hu_cbsa_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
   ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_jul.x)) * 100)
 )]
-hu_cbsa_us[, pctl_us_hgi_24_jul_25_nov := as.integer(
-  ceiling(frank(hgi_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_nov.x)) * 100)
+hu_cbsa_us[, pctl_us_hgi_25_jul_26_jul := as.integer(
+  ceiling(frank(hgi_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_26_jul.x)) * 100)
 )]
-hu_cbsa_us[, pctl_us_hgi_25_jul_25_nov := as.integer(
-  ceiling(frank(hgi_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_25_nov.x)) * 100)
-)]
-hu_cbsa_us[, pctl_us_hgi_20_apr_25_jul := as.integer(
-  ceiling(frank(hgi_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_jul.x)) * 100)
-)]
-hu_cbsa_us[, pctl_us_hgi_20_apr_25_nov := as.integer(
-  ceiling(frank(hgi_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_25_nov.x)) * 100)
+hu_cbsa_us[, pctl_us_hgi_20_apr_26_jul := as.integer(
+  ceiling(frank(hgi_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for cagr_* metrics
 hu_cbsa_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
   ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_24_jul.x)) * 100)
 )]
-hu_cbsa_us[, pctl_us_cagr_24_jul_25_nov := as.integer(
-  ceiling(frank(cagr_24_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_24_jul_25_nov.x)) * 100)
-)]
-hu_cbsa_us[, pctl_us_cagr_25_jul_25_nov := as.integer(
-  ceiling(frank(cagr_25_jul_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_25_jul_25_nov.x)) * 100)
-)]
-hu_cbsa_us[, pctl_us_cagr_20_apr_25_jul := as.integer(
-  ceiling(frank(cagr_20_apr_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_jul.x)) * 100)
-)]
-hu_cbsa_us[, pctl_us_cagr_20_apr_25_nov := as.integer(
-  ceiling(frank(cagr_20_apr_25_nov.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_25_nov.x)) * 100)
+hu_cbsa_us[, pctl_us_cagr_20_apr_26_jul := as.integer(
+  ceiling(frank(cagr_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_26_jul.x)) * 100)
 )]
 
 # Percentiles for agr_* metrics
 hu_cbsa_us[, pctl_us_agr_24_jul_25_jul := as.integer(
   ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_24_jul_25_jul.x)) * 100)
+)]
+hu_cbsa_us[, pctl_us_agr_25_jul_26_jul := as.integer(
+  ceiling(frank(agr_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_25_jul_26_jul.x)) * 100)
 )]
 
 
@@ -134,28 +116,20 @@ hu_cbsa_indexes <- hu_cbsa_us[, .(
   cbsa23,
   idx_us_hgi_20_apr_24_jul,
   idx_us_hgi_24_jul_25_jul,
-  idx_us_hgi_24_jul_25_nov,
-  idx_us_hgi_25_jul_25_nov,
-  idx_us_hgi_20_apr_25_jul,
-  idx_us_hgi_20_apr_25_nov,
+  idx_us_hgi_25_jul_26_jul,
+  idx_us_hgi_20_apr_26_jul,
   idx_us_cagr_20_apr_24_jul,
-  idx_us_cagr_24_jul_25_nov,
-  idx_us_cagr_25_jul_25_nov,
-  idx_us_cagr_20_apr_25_jul,
-  idx_us_cagr_20_apr_25_nov,
+  idx_us_cagr_20_apr_26_jul,
   idx_us_agr_24_jul_25_jul,
+  idx_us_agr_25_jul_26_jul,
   pctl_us_hgi_20_apr_24_jul,
   pctl_us_hgi_24_jul_25_jul,
-  pctl_us_hgi_24_jul_25_nov,
-  pctl_us_hgi_25_jul_25_nov,
-  pctl_us_hgi_20_apr_25_jul,
-  pctl_us_hgi_20_apr_25_nov,
+  pctl_us_hgi_25_jul_26_jul,
+  pctl_us_hgi_20_apr_26_jul,
   pctl_us_cagr_20_apr_24_jul,
-  pctl_us_cagr_24_jul_25_nov,
-  pctl_us_cagr_25_jul_25_nov,
-  pctl_us_cagr_20_apr_25_jul,
-  pctl_us_cagr_20_apr_25_nov,
-  pctl_us_agr_24_jul_25_jul
+  pctl_us_cagr_20_apr_26_jul,
+  pctl_us_agr_24_jul_25_jul,
+  pctl_us_agr_25_jul_26_jul
 )]
 
 
