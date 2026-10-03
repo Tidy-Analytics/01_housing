@@ -1,5 +1,7 @@
 #### GET HOUSING files
-### use 
+### SOURCES DATA FROM CENSUS BUREAU SITE VIA WGET
+### JULY 2026 VINTAGE
+### CREATED OCT 2 2026
 
 library(DBI)
 library(duckdb)
@@ -46,16 +48,15 @@ for (i in seq_along(states_list$state_code)) {
   state_code <- states_list$state_code[i]
   state_name <- states_list$state_name[i]
   url <- paste0(
-    "https://www2.census.gov/geo/pvs/addcountlisting/2025/", 
-    state_code, "_", state_name, "_AddressBlockCountList_072025.txt"
+    "https://www2.census.gov/geo/pvs/addcountlisting/2026/", 
+    state_code, "_", state_name, "_AddressBlockCountList_072026.txt"
   )
   
-  filename <- paste0(state_code, "_", state_name, "_AddressBlockCountList_072025.txt")
+  filename <- paste0(state_code, "_", state_name, "_AddressBlockCountList_072026.txt")
   filepath <- file.path("/home/joel/data/geo", filename)
   
   # Use wget to download the file
   system(paste("wget", "-O", shQuote(filepath), shQuote(url)))
 }
 
-
-  ## example: https://www2.census.gov/geo/pvs/addcountlisting/2025/01_Alabama_AddressBlockCountList_072025.txt
+  ## example: https://www2.census.gov/geo/pvs/addcountlisting/2025/01_Alabama_AddressBlockCountList_122025.txt

@@ -52,6 +52,7 @@ for (file in block_place_files) {
   data <- fread(file)
   # create GEOID as concatenation of county, tract, and block; use data.table idioms
   data[, GEOID := paste0(county, gsub("\\.", "", tract), block)]
+  
   data_clean <- data %>%
   mutate(across(where(is.character), ~iconv(.x, to = "UTF-8", sub = "?")))
   

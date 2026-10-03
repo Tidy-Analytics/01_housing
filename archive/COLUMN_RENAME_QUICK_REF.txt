@@ -1,0 +1,42 @@
+# QUICK REFERENCE: Column Name Changes
+
+## Base Columns (Counts)
+HU_20       -> HU_20_apr
+HU_24       -> HU_24_jul
+gq_20       -> gq_20_apr
+gq_24       -> gq_24_jul
+
+## Apr 2020 to Jul 2024 (4.25 years)
+hg_20_24    -> hg_20_apr_24_jul
+hgi_20_24   -> hgi_20_apr_24_jul
+cagr_20_24  -> cagr_20_apr_24_jul
+
+## Jul 2024 to Jul 2025 (1.0 year)
+hg_24_25_jul   -> hg_24_jul_25_jul
+hgi_25_jul     -> hgi_24_jul_25_jul
+agr_25_jul     -> agr_24_jul_25_jul
+
+## Jul 2024 to Nov 2025 (1.33 years)
+hg_24_25_nov   -> hg_24_jul_25_nov
+hgi_25_nov     -> hgi_24_jul_25_nov
+cagr_24_25_nov -> cagr_24_jul_25_nov
+
+## Jul 2025 to Nov 2025 (0.33 years)
+hg_jul_nov_25   -> hg_25_jul_25_nov
+hgi_jul_nov_25  -> hgi_25_jul_25_nov
+cagr_jul_nov_25 -> cagr_25_jul_25_nov
+
+## Apr 2020 to Jul 2025 (5.25 years)
+hg_20_25_jul   -> hg_20_apr_25_jul
+hgi_20_25_jul  -> hgi_20_apr_25_jul
+cagr_20_25_jul -> cagr_20_apr_25_jul
+
+## Apr 2020 to Nov 2025 (5.58 years)
+hg_20_25_nov   -> hg_20_apr_25_nov
+hgi_20_25_nov  -> hgi_20_apr_25_nov
+cagr_20_25_nov -> cagr_20_apr_25_nov
+
+---
+For detailed documentation, see: COLUMN_NAMING_CONVENTION.md
+For programmatic access: column_rename_lookup.csv or column_rename_lookup.json
+For automated updates: column_rename_helper.py or column_rename_helper.R

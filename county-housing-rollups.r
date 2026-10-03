@@ -1,5 +1,5 @@
-## ZCTA TO STATE; 
-## CORE ADAPTED FROM 'zcta-to-county.r'
+## COUNTY TO GEOGRAPHIC ROLLUPS
+## CORE ADAPTED FROM 'bg-housing-rollups.r'
 
 library(duckdb)
 library(data.table)
@@ -46,7 +46,7 @@ hu_us <- as.data.table(dbGetQuery(conh, "select * from hu_us"))
 
 county_to_cbsa <- as.data.table(dbGetQuery(congref, "select * from county_to_cbsa"))
 
-hu_county_cbsa <- merge(hu_county, county_to_cbsa, by.x = "co_fips", by.y = "county", all.x = TRUE)
+hu_county_cbsa <- merge(hu_county, county_to_cbsa, by.x = "county_fips", by.y = "county", all.x = TRUE)
 
 hu_county_cbsa <- as.data.table(
   merge(hu_county_cbsa, hu_cbsa, by.x = "cbsa23", by.y = "cbsa23", all.x = TRUE)
@@ -54,33 +54,48 @@ hu_county_cbsa <- as.data.table(
 
 ############### RELATIVE INDEX COMPUTATIONS  -- CBSA LEVEL
 
-hu_county_cbsa[, idx_20_24_cbsa := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_county_cbsa[, idx_20_25_cbsa := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_county_cbsa[, idx_25_cbsa := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_county_cbsa[, idx_cbsa_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_county_cbsa[, idx_cbsa_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_county_cbsa[, idx_cbsa_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_county_cbsa[, idx_cbsa_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
-## NULL CBSA ARE CONNECTICUT BLOCK GROUPS; CBSA DEFINITIONS BASED ON NEW PLANNING REGION
-## COMPONENTS ARE NOT YET DEFINED; WE ARE USING NEW PLANNING REGION IDS IN OUR BLOCK GROUP
+# cagr_* indexes (compound annual growth rate)
+hu_county_cbsa[, idx_cbsa_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_county_cbsa[, idx_cbsa_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_county_cbsa[, idx_cbsa_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_county_cbsa[, idx_cbsa_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
+
+## NULL CBSA ARE CONNECTICUT COUNTIES; CBSA DEFINITIONS BASED ON NEW PLANNING REGION
+## COMPONENTS ARE NOT YET DEFINED; WE ARE USING NEW PLANNING REGION IDS IN OUR COUNTY
 ## IDENTIFIERS; WE WILL NEED A PLANNING REGION TO CBSA CROSSWALK TO HANDLE THESE; THESE ROWS 
 ## WOULD REPLACE COUNTY-BASED DEFINITIONS
 
-hu_county_cbsa <- hu_county_cbsa[!is.na(co_fips), ]
+hu_county_cbsa <- hu_county_cbsa[!is.na(county_fips), ]
 
 hu_county_cbsa[is.na(cbsa23), cbsa23 := "CT000"]
 
 ## TRIM FILE
 
 hu_county_cbsa <- hu_county_cbsa[, .(
-  co_fips,
+  county_fips,
   cbsa23,
-  idx_20_24_cbsa,
-  idx_20_25_cbsa,
-  idx_25_cbsa
+  idx_cbsa_hgi_20_apr_24_jul,
+  idx_cbsa_hgi_24_jul_25_jul,
+  idx_cbsa_hgi_25_jul_26_jul,
+  idx_cbsa_hgi_20_apr_26_jul,
+  idx_cbsa_cagr_20_apr_24_jul,
+  idx_cbsa_cagr_20_apr_26_jul,
+  idx_cbsa_agr_24_jul_25_jul,
+  idx_cbsa_agr_25_jul_26_jul
 )]
 
 
 #### COUNTY TO STATE ################################
 
-hu_county[, state_fips := substr(co_fips, 1, 2)]
+hu_county[, state_fips := substr(county_fips, 1, 2)]
 
 hu_county_state <- as.data.table(
   merge(hu_county, hu_state, by.x = "state_fips", by.y = "state_code", all.x = TRUE)
@@ -88,20 +103,35 @@ hu_county_state <- as.data.table(
 
 ############### RELATIVE INDEX COMPUTATIONS  -- STATE LEVEL
 
-hu_county_state[, idx_20_24_state := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_county_state[, idx_20_25_state := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_county_state[, idx_25_state := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_county_state[, idx_state_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_county_state[, idx_state_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_county_state[, idx_state_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_county_state[, idx_state_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
 
-hu_county_state <- hu_county_state[!is.na(co_fips), ]
+# cagr_* indexes (compound annual growth rate)
+hu_county_state[, idx_state_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_county_state[, idx_state_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_county_state[, idx_state_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_county_state[, idx_state_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
+
+hu_county_state <- hu_county_state[!is.na(county_fips), ]
 
 ## TRIM FILE
 
 hu_county_state <- hu_county_state[, .(
-  co_fips,
+  county_fips,
   state_fips,
-  idx_20_24_state,
-  idx_20_25_state,
-  idx_25_state
+  idx_state_hgi_20_apr_24_jul,
+  idx_state_hgi_24_jul_25_jul,
+  idx_state_hgi_25_jul_26_jul,
+  idx_state_hgi_20_apr_26_jul,
+  idx_state_cagr_20_apr_24_jul,
+  idx_state_cagr_20_apr_26_jul,
+  idx_state_agr_24_jul_25_jul,
+  idx_state_agr_25_jul_26_jul
 )]
 
 ########### COUNTY TO US #############################################
@@ -115,52 +145,92 @@ hu_county_us <- as.data.table(
 
 ############# RELATIVE INDEX COMPUTATIONS  -- US LEVEL
 
-hu_county_us[, idx_20_24_us := (hgi_20_24.x - 1) / (hgi_20_24.y - 1) * 100]
-hu_county_us[, idx_20_25_us := (hgi_20_25.x - 1) / (hgi_20_25.y - 1) * 100]
-hu_county_us[, idx_25_us := (agr_25.x) / (agr_25.y) * 100]
+# hgi_* indexes (housing growth index)
+hu_county_us[, idx_us_hgi_20_apr_24_jul := (hgi_20_apr_24_jul.x - 1) / (hgi_20_apr_24_jul.y - 1) * 100]
+hu_county_us[, idx_us_hgi_24_jul_25_jul := (hgi_24_jul_25_jul.x - 1) / (hgi_24_jul_25_jul.y - 1) * 100]
+hu_county_us[, idx_us_hgi_25_jul_26_jul := (hgi_25_jul_26_jul.x - 1) / (hgi_25_jul_26_jul.y - 1) * 100]
+hu_county_us[, idx_us_hgi_20_apr_26_jul := (hgi_20_apr_26_jul.x - 1) / (hgi_20_apr_26_jul.y - 1) * 100]
+
+# cagr_* indexes (compound annual growth rate)
+hu_county_us[, idx_us_cagr_20_apr_24_jul := (cagr_20_apr_24_jul.x) / (cagr_20_apr_24_jul.y) * 100]
+hu_county_us[, idx_us_cagr_20_apr_26_jul := (cagr_20_apr_26_jul.x) / (cagr_20_apr_26_jul.y) * 100]
+
+# agr_* indexes (annual growth rate)
+hu_county_us[, idx_us_agr_24_jul_25_jul := (agr_24_jul_25_jul.x) / (agr_24_jul_25_jul.y) * 100]
+hu_county_us[, idx_us_agr_25_jul_26_jul := (agr_25_jul_26_jul.x) / (agr_25_jul_26_jul.y) * 100]
 
 
-### FINALLY : COMPUTE NATIONAL PERCENTILES FOR BLOCK GROUPS
+### COMPUTE NATIONAL PERCENTILES FOR COUNTIES
 
-# compute percentile column for each .x column in lines 119-121, 
-# where the highest percentiles are the highest values
-hu_county_us[, pctl_20_24_us := as.integer(
-  ceiling(frank(hgi_20_24.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for hgi_* metrics
+hu_county_us[, pctl_us_hgi_20_apr_24_jul := as.integer(
+  ceiling(frank(hgi_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_24_jul.x)) * 100)
+)]
+hu_county_us[, pctl_us_hgi_24_jul_25_jul := as.integer(
+  ceiling(frank(hgi_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_24_jul_25_jul.x)) * 100)
+)]
+hu_county_us[, pctl_us_hgi_25_jul_26_jul := as.integer(
+  ceiling(frank(hgi_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_25_jul_26_jul.x)) * 100)
+)]
+hu_county_us[, pctl_us_hgi_20_apr_26_jul := as.integer(
+  ceiling(frank(hgi_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(hgi_20_apr_26_jul.x)) * 100)
 )]
 
-hu_county_us[, pctl_20_25_us := as.integer(
-  ceiling(frank(hgi_20_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for cagr_* metrics
+hu_county_us[, pctl_us_cagr_20_apr_24_jul := as.integer(
+  ceiling(frank(cagr_20_apr_24_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_24_jul.x)) * 100)
+)]
+hu_county_us[, pctl_us_cagr_20_apr_26_jul := as.integer(
+  ceiling(frank(cagr_20_apr_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(cagr_20_apr_26_jul.x)) * 100)
 )]
 
-hu_county_us[, pctl_25_us := as.integer(
-  ceiling(frank(agr_25.x, ties.method = "min", na.last = "keep") / .N * 100)
+# Percentiles for agr_* metrics
+hu_county_us[, pctl_us_agr_24_jul_25_jul := as.integer(
+  ceiling(frank(agr_24_jul_25_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_24_jul_25_jul.x)) * 100)
+)]
+hu_county_us[, pctl_us_agr_25_jul_26_jul := as.integer(
+  ceiling(frank(agr_25_jul_26_jul.x, ties.method = "min", na.last = "keep") / sum(!is.na(agr_25_jul_26_jul.x)) * 100)
 )]
 
 hu_county_us <- hu_county_us[, .(
-  co_fips,
-  idx_20_24_us,
-  idx_20_25_us,
-  idx_25_us,
-  pctl_20_24_us,
-  pctl_20_25_us,
-  pctl_25_us
+  county_fips,
+  idx_us_hgi_20_apr_24_jul,
+  idx_us_hgi_24_jul_25_jul,
+  idx_us_hgi_25_jul_26_jul,
+  idx_us_hgi_20_apr_26_jul,
+  idx_us_cagr_20_apr_24_jul,
+  idx_us_cagr_20_apr_26_jul,
+  idx_us_agr_24_jul_25_jul,
+  idx_us_agr_25_jul_26_jul,
+  pctl_us_hgi_20_apr_24_jul,
+  pctl_us_hgi_24_jul_25_jul,
+  pctl_us_hgi_25_jul_26_jul,
+  pctl_us_hgi_20_apr_26_jul,
+  pctl_us_cagr_20_apr_24_jul,
+  pctl_us_cagr_20_apr_26_jul,
+  pctl_us_agr_24_jul_25_jul,
+  pctl_us_agr_25_jul_26_jul
 )]
 
 
-### COMPILE INDEX SETS AND WRITE TO DUCKDB
+### WRITE TO DUCKDB
 
-hu_county_indexes <- Reduce(fu                                                                                                                                                                                                  nction(x, y) merge(x, y, by = "co_fips", all = TRUE), 
-                                 list(hu_county_cbsa, hu_county_state, hu_county_us)
-)
+## CLEANUP FIX FOR DUCKDB BARFING DUE TO UTF ISSUES
+## HAT TIP TO https://github.com/duckdb/duckdb-r/issues/12#issuecomment-2419681433
+## FOR THESE STRINGI FUNCTIONS
 
-hu_county_indexes <- hu_county_indexes[!is.na(co_fips), ]
+hu_county_cbsa <- hu_county_cbsa |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+hu_county_state <- hu_county_state |> mutate(across(where(is.character), stringi::stri_enc_tonative))
+hu_county_us <- hu_county_us |> mutate(across(where(is.character), stringi::stri_enc_tonative))
 
-dbWriteTable(conh, "hu_county_indexes", hu_county_indexes, overwrite = TRUE)
+hu_county_cbsa <- hu_county_cbsa[!is.na(county_fips), ]
+hu_county_state <- hu_county_state[!is.na(county_fips), ]
+hu_county_us <- hu_county_us[!is.na(county_fips), ]
+
+dbWriteTable(conh, "hu_county_cbsa", hu_county_cbsa, overwrite = TRUE)
+dbWriteTable(conh, "hu_county_state", hu_county_state, overwrite = TRUE)
+dbWriteTable(conh, "hu_county_us", hu_county_us, overwrite = TRUE)
+
+dbListTables(conh)
 
 #### COUNTY INDEXES COMPLETE ###############################
-
-bg_all_data <- as.data.table(
-  dbGetQuery(
-    conh, "select a.*, b.* from hu_block_group a JOIN hu_block_group_indexes b ON a.block_group = b.block_group"
-    )
-)

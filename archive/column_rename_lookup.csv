@@ -1,0 +1,27 @@
+old_column_name,new_column_name,column_type,description,time_period_from,time_period_to,calculation_type
+HU_20,HU_20_apr,base,Housing Units from 2020 Census,2020-04,2020-04,count
+HU_24,HU_24_jul,base,Housing Units from July 2024 vintage,2024-07,2024-07,count
+gq_20,gq_20_apr,base,Group Quarters from 2020 Census,2020-04,2020-04,count
+gq_24,gq_24_jul,base,Group Quarters from July 2024 vintage,2024-07,2024-07,count
+HU_25_jul,HU_25_jul,base,Housing Units from July 2025 vintage (no change),2025-07,2025-07,count
+gq_25_jul,gq_25_jul,base,Group Quarters from July 2025 vintage (no change),2025-07,2025-07,count
+HU_25_nov,HU_25_nov,base,Housing Units from November 2025 vintage (no change),2025-11,2025-11,count
+gq_25_nov,gq_25_nov,base,Group Quarters from November 2025 vintage (no change),2025-11,2025-11,count
+hg_20_24,hg_20_apr_24_jul,calculated,Housing growth (absolute difference),2020-04,2024-07,difference
+hgi_20_24,hgi_20_apr_24_jul,calculated,Housing growth index (ratio),2020-04,2024-07,ratio
+cagr_20_24,cagr_20_apr_24_jul,calculated,Compound annual growth rate,2020-04,2024-07,cagr
+hg_24_25_jul,hg_24_jul_25_jul,calculated,Housing growth (absolute difference),2024-07,2025-07,difference
+hgi_25_jul,hgi_24_jul_25_jul,calculated,Housing growth index (ratio),2024-07,2025-07,ratio
+agr_25_jul,agr_24_jul_25_jul,calculated,Annual growth rate,2024-07,2025-07,agr
+hg_24_25_nov,hg_24_jul_25_nov,calculated,Housing growth (absolute difference),2024-07,2025-11,difference
+hgi_25_nov,hgi_24_jul_25_nov,calculated,Housing growth index (ratio),2024-07,2025-11,ratio
+cagr_24_25_nov,cagr_24_jul_25_nov,calculated,Compound annual growth rate,2024-07,2025-11,cagr
+hg_jul_nov_25,hg_25_jul_25_nov,calculated,Housing growth (absolute difference),2025-07,2025-11,difference
+hgi_jul_nov_25,hgi_25_jul_25_nov,calculated,Housing growth index (ratio),2025-07,2025-11,ratio
+cagr_jul_nov_25,cagr_25_jul_25_nov,calculated,Compound annual growth rate,2025-07,2025-11,cagr
+hg_20_25_jul,hg_20_apr_25_jul,calculated,Housing growth (absolute difference),2020-04,2025-07,difference
+hgi_20_25_jul,hgi_20_apr_25_jul,calculated,Housing growth index (ratio),2020-04,2025-07,ratio
+cagr_20_25_jul,cagr_20_apr_25_jul,calculated,Compound annual growth rate,2020-04,2025-07,cagr
+hg_20_25_nov,hg_20_apr_25_nov,calculated,Housing growth (absolute difference),2020-04,2025-11,difference
+hgi_20_25_nov,hgi_20_apr_25_nov,calculated,Housing growth index (ratio),2020-04,2025-11,ratio
+cagr_20_25_nov,cagr_20_apr_25_nov,calculated,Compound annual growth rate,2020-04,2025-11,cagr
